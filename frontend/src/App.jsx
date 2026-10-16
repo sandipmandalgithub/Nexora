@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import {
   Link,
@@ -9,6 +10,7 @@ import {
 } from "react-router-dom";
 import axios from "axios";
 import Home from "./Home";
+import CourseList from "./components/CourseList";
 
 const API_BASE_URL = "http://localhost:8080/api";
 
@@ -578,6 +580,8 @@ function Dashboard() {
             </span>
           </section>
         </div>
+
+        <CourseList />
 
         <p className="mt-6 break-words text-sm text-slate-500">
           Signed in as {user.email || "your account"} · Role:{" "}

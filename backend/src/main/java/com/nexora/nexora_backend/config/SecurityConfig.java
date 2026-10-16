@@ -36,6 +36,8 @@ public class SecurityConfig {
                 .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
             )
             .authorizeHttpRequests(auth -> auth
+
+                // Public endpoints
                 .requestMatchers(
                     "/api/health",
                     "/api/auth/register",
@@ -43,17 +45,55 @@ public class SecurityConfig {
                     "/error"
                 ).permitAll()
 
+                // Authenticated users can access their own profile
                 .requestMatchers(
                     HttpMethod.GET,
                     "/api/users/me"
                 ).hasAnyRole("STUDENT", "ADMIN")
 
+                // Only ADMIN can access user-management endpoints
                 .requestMatchers(
                     HttpMethod.GET,
                     "/api/users",
                     "/api/users/**"
                 ).hasRole("ADMIN")
 
+                // Students and Admins can read courses
+                .requestMatchers(
+                    HttpMethod.GET,
+                    "/api/courses",
+                    "/api/courses/**"
+                ).hasAnyRole("STUDENT", "ADMIN")
+
+                // Only Admins can create courses
+                .requestMatchers(
+                    HttpMethod.POST,
+                    "/api/courses",
+                    "/api/courses/**"
+                ).hasRole("ADMIN")
+
+                // Only Admins can update courses
+                .requestMatchers(
+                    HttpMethod.PUT,
+                    "/api/courses",
+                    "/api/courses/**"
+                ).hasRole("ADMIN")
+
+                // Only Admins can partially update courses
+                .requestMatchers(
+                    HttpMethod.PATCH,
+                    "/api/courses",
+                    "/api/courses/**"
+                ).hasRole("ADMIN")
+
+                // Only Admins can delete courses
+                .requestMatchers(
+                    HttpMethod.DELETE,
+                    "/api/courses",
+                    "/api/courses/**"
+                ).hasRole("ADMIN")
+
+                // All other endpoints require authentication
                 .anyRequest().authenticated()
             )
             .addFilterBefore(
