@@ -11,6 +11,7 @@ import {
 import axios from "axios";
 import Home from "./Home";
 import CourseList from "./components/CourseList";
+import AdminCourseManagement from "./components/AdminCourseManagement";
 
 const API_BASE_URL = "http://localhost:8080/api";
 
@@ -581,7 +582,7 @@ function Dashboard() {
           </section>
         </div>
 
-        <CourseList />
+        {isAdmin ? <AdminCourseManagement /> : <CourseList />}
 
         <p className="mt-6 break-words text-sm text-slate-500">
           Signed in as {user.email || "your account"} · Role:{" "}
