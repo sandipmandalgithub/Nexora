@@ -17,31 +17,35 @@ const API_BASE_URL = "http://localhost:8080/api";
 
 function AuthLayout({ children, subtitle, title }) {
   return (
-    <main className="relative flex min-h-[calc(100vh-76px)] items-center justify-center overflow-hidden bg-slate-50 px-4 py-10 sm:px-6 sm:py-14">
+    <main className="relative flex min-h-[calc(100vh-76px)] items-center justify-center overflow-hidden bg-slate-50 px-3 py-7 sm:px-6 sm:py-12">
       <div className="pointer-events-none absolute -left-24 top-10 h-72 w-72 rounded-full bg-indigo-200/40 blur-3xl" />
       <div className="pointer-events-none absolute -right-24 bottom-0 h-80 w-80 rounded-full bg-violet-200/40 blur-3xl" />
 
-      <div className="relative w-full max-w-[460px]">
-        <div className="mb-7 text-center">
+      <div className="relative mx-auto w-full max-w-[460px] min-w-0">
+        <div className="mb-5 text-center sm:mb-7">
           <Link
             to="/"
-            className="inline-flex items-center gap-2.5 text-3xl font-black tracking-tight text-slate-950"
+            className="inline-flex max-w-full items-center justify-center gap-2 text-2xl font-black tracking-tight text-slate-950 sm:gap-2.5 sm:text-3xl"
           >
-            <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-indigo-600 text-xl text-white shadow-lg shadow-indigo-600/20">
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-indigo-600 text-xl text-white shadow-lg shadow-indigo-600/20 sm:h-11 sm:w-11">
               N
             </span>
-            Nexora<span className="text-indigo-500">.</span>
+            <span>
+              Nexora<span className="text-indigo-500">.</span>
+            </span>
           </Link>
 
-          <p className="mt-4 text-sm text-slate-500">{subtitle}</p>
+          <p className="mx-auto mt-3 max-w-sm break-words text-sm leading-6 text-slate-500 sm:mt-4">
+            {subtitle}
+          </p>
         </div>
 
-        <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-xl shadow-slate-900/5 sm:p-8">
-          <div className="mb-7">
-            <h1 className="text-2xl font-black tracking-tight text-slate-950 sm:text-3xl">
+        <section className="min-w-0 rounded-2xl border border-slate-200 bg-white p-4 shadow-xl shadow-slate-900/5 sm:rounded-3xl sm:p-8">
+          <div className="mb-5 sm:mb-7">
+            <h1 className="break-words text-2xl font-black tracking-tight text-slate-950 sm:text-3xl">
               {title}
             </h1>
-            <p className="mt-2 text-sm leading-6 text-slate-500">
+            <p className="mt-2 break-words text-sm leading-6 text-slate-500">
               Your learning journey starts here.
             </p>
           </div>
@@ -49,7 +53,7 @@ function AuthLayout({ children, subtitle, title }) {
           {children}
         </section>
 
-        <p className="mt-6 text-center text-xs leading-5 text-slate-500">
+        <p className="mx-auto mt-5 max-w-sm break-words px-1 text-center text-xs leading-5 text-slate-500 sm:mt-6">
           © {new Date().getFullYear()} Nexora. Built for lifelong learning.
         </p>
       </div>
@@ -84,7 +88,7 @@ function FormField({
         placeholder={placeholder}
         autoComplete={autoComplete}
         required
-        className="min-h-12 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-base text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10"
+        className="min-h-12 w-full min-w-0 rounded-xl border border-slate-200 bg-white px-3 py-3 text-base text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 sm:px-4"
       />
     </div>
   );
@@ -103,7 +107,7 @@ function AlertMessage({ message, type = "error" }) {
   return (
     <div
       role={type === "error" ? "alert" : "status"}
-      className={`mb-5 rounded-xl border px-4 py-3 text-sm leading-6 ${styles}`}
+      className={`mb-5 min-w-0 break-words rounded-xl border px-3 py-3 text-sm leading-6 sm:px-4 ${styles}`}
     >
       {message}
     </div>
@@ -234,7 +238,7 @@ function Login() {
     >
       <AlertMessage message={error} />
 
-      <form onSubmit={handleSubmit} className="space-y-5">
+      <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5">
         <FormField
           label="Email address"
           name="email"
@@ -245,7 +249,7 @@ function Login() {
           autoComplete="email"
         />
 
-        <div>
+        <div className="min-w-0">
           <div className="mb-2 flex items-center justify-between gap-3">
             <label
               htmlFor="password"
@@ -255,7 +259,7 @@ function Login() {
             </label>
           </div>
 
-          <div className="relative">
+          <div className="relative min-w-0">
             <input
               id="password"
               name="password"
@@ -265,13 +269,13 @@ function Login() {
               placeholder="Enter your password"
               autoComplete="current-password"
               required
-              className="min-h-12 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 pr-20 text-base text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10"
+              className="min-h-12 w-full min-w-0 rounded-xl border border-slate-200 bg-white px-3 py-3 pr-20 text-base text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 sm:px-4"
             />
 
             <button
               type="button"
               onClick={() => setShowPassword((previous) => !previous)}
-              className="absolute inset-y-0 right-3 my-auto rounded-md px-2 text-xs font-bold text-indigo-600 hover:text-indigo-800"
+              className="absolute inset-y-0 right-2 my-auto rounded-md px-2 text-xs font-bold text-indigo-600 hover:text-indigo-800 sm:right-3"
               aria-label={showPassword ? "Hide password" : "Show password"}
             >
               {showPassword ? "Hide" : "Show"}
@@ -282,22 +286,22 @@ function Login() {
         <button
           type="submit"
           disabled={loading}
-          className="flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-indigo-600 px-5 py-3 font-bold text-white shadow-lg shadow-indigo-600/20 transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-60"
+          className="flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 py-3 text-sm font-bold text-white shadow-lg shadow-indigo-600/20 transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-60 sm:px-5 sm:text-base"
         >
           {loading ? "Signing in..." : "Sign in to Nexora"}
           {!loading && <span aria-hidden="true">→</span>}
         </button>
       </form>
 
-      <div className="my-6 flex items-center gap-3">
-        <div className="h-px flex-1 bg-slate-200" />
-        <span className="text-xs font-medium text-slate-400">
+      <div className="my-5 flex min-w-0 items-center gap-2 sm:my-6 sm:gap-3">
+        <div className="h-px min-w-0 flex-1 bg-slate-200" />
+        <span className="shrink-0 text-center text-[10px] font-medium tracking-wide text-slate-400 sm:text-xs">
           NEW TO NEXORA?
         </span>
-        <div className="h-px flex-1 bg-slate-200" />
+        <div className="h-px min-w-0 flex-1 bg-slate-200" />
       </div>
 
-      <p className="text-center text-sm text-slate-600">
+      <p className="break-words text-center text-sm leading-6 text-slate-600">
         Don't have an account?{" "}
         <Link
           to="/register"
@@ -309,7 +313,7 @@ function Login() {
 
       <Link
         to="/"
-        className="mt-5 block text-center text-sm font-semibold text-slate-500 transition hover:text-indigo-600"
+        className="mt-4 block break-words text-center text-sm font-semibold text-slate-500 transition hover:text-indigo-600 sm:mt-5"
       >
         ← Back to home
       </Link>
@@ -412,7 +416,7 @@ function Register() {
           autoComplete="email"
         />
 
-        <div>
+        <div className="min-w-0">
           <label
             htmlFor="register-password"
             className="mb-2 block text-sm font-bold text-slate-700"
@@ -420,7 +424,7 @@ function Register() {
             Password
           </label>
 
-          <div className="relative">
+          <div className="relative min-w-0">
             <input
               id="register-password"
               name="password"
@@ -431,20 +435,20 @@ function Register() {
               autoComplete="new-password"
               minLength={8}
               required
-              className="min-h-12 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 pr-20 text-base text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10"
+              className="min-h-12 w-full min-w-0 rounded-xl border border-slate-200 bg-white px-3 py-3 pr-20 text-base text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 sm:px-4"
             />
 
             <button
               type="button"
               onClick={() => setShowPassword((previous) => !previous)}
-              className="absolute inset-y-0 right-3 my-auto rounded-md px-2 text-xs font-bold text-indigo-600 hover:text-indigo-800"
+              className="absolute inset-y-0 right-2 my-auto rounded-md px-2 text-xs font-bold text-indigo-600 hover:text-indigo-800 sm:right-3"
               aria-label={showPassword ? "Hide password" : "Show password"}
             >
               {showPassword ? "Hide" : "Show"}
             </button>
           </div>
 
-          <p className="mt-2 text-xs leading-5 text-slate-500">
+          <p className="mt-2 break-words text-xs leading-5 text-slate-500">
             Use at least 8 characters. Your password will be handled by the
             backend.
           </p>
@@ -463,14 +467,14 @@ function Register() {
         <button
           type="submit"
           disabled={loading}
-          className="flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-indigo-600 px-5 py-3 font-bold text-white shadow-lg shadow-indigo-600/20 transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-60"
+          className="flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 py-3 text-sm font-bold text-white shadow-lg shadow-indigo-600/20 transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-60 sm:px-5 sm:text-base"
         >
           {loading ? "Creating account..." : "Create account"}
           {!loading && <span aria-hidden="true">→</span>}
         </button>
       </form>
 
-      <p className="mt-6 text-center text-sm text-slate-600">
+      <p className="mt-5 break-words text-center text-sm leading-6 text-slate-600 sm:mt-6">
         Already have an account?{" "}
         <Link
           to="/login"
@@ -482,7 +486,7 @@ function Register() {
 
       <Link
         to="/"
-        className="mt-5 block text-center text-sm font-semibold text-slate-500 transition hover:text-indigo-600"
+        className="mt-4 block break-words text-center text-sm font-semibold text-slate-500 transition hover:text-indigo-600 sm:mt-5"
       >
         ← Back to home
       </Link>
@@ -515,19 +519,19 @@ function Dashboard() {
   const isAdmin = user.role === "ADMIN";
 
   return (
-    <main className="min-h-[calc(100vh-76px)] bg-slate-50 px-4 py-10 sm:px-6 sm:py-14">
-      <div className="mx-auto max-w-5xl">
-        <div className="flex flex-col justify-between gap-5 rounded-3xl bg-slate-950 p-6 text-white sm:p-9 md:flex-row md:items-center">
-          <div className="min-w-0">
-            <p className="text-sm font-semibold text-indigo-300">
+    <main className="min-h-[calc(100vh-76px)] bg-slate-50 px-3 py-6 sm:px-6 sm:py-10 lg:py-14">
+      <div className="mx-auto w-full max-w-5xl min-w-0">
+        <div className="flex min-w-0 flex-col justify-between gap-5 rounded-2xl bg-slate-950 p-4 text-white sm:rounded-3xl sm:p-6 md:flex-row md:items-center md:gap-6 md:p-9">
+          <div className="min-w-0 flex-1">
+            <p className="text-xs font-semibold tracking-wide text-indigo-300 sm:text-sm">
               {isAdmin ? "ADMIN WORKSPACE" : "STUDENT WORKSPACE"}
             </p>
 
-            <h1 className="mt-3 break-words text-3xl font-black tracking-tight sm:text-4xl">
+            <h1 className="mt-3 break-words text-2xl font-black tracking-tight sm:text-3xl md:text-4xl">
               Welcome{user.fullName ? `, ${user.fullName}` : " to Nexora"}!
             </h1>
 
-            <p className="mt-3 text-sm leading-6 text-slate-300 sm:text-base">
+            <p className="mt-3 break-words text-sm leading-6 text-slate-300 sm:text-base">
               Your account is signed in. Your learning workspace will grow as
               we add the course and examination features.
             </p>
@@ -536,47 +540,47 @@ function Dashboard() {
           <button
             type="button"
             onClick={handleLogout}
-            className="min-h-11 shrink-0 rounded-xl border border-white/20 px-5 py-3 font-bold text-white transition hover:bg-white/10"
+            className="min-h-11 w-full shrink-0 rounded-xl border border-white/20 px-5 py-3 text-sm font-bold text-white transition hover:bg-white/10 sm:w-auto sm:self-start md:self-center"
           >
             Sign out
           </button>
         </div>
 
-        <div className="mt-7 grid grid-cols-1 gap-5 sm:grid-cols-2">
-          <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+        <div className="mt-5 grid min-w-0 grid-cols-1 gap-4 sm:mt-7 sm:grid-cols-2 sm:gap-5">
+          <section className="min-w-0 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6">
             <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-indigo-50 text-2xl">
               📚
             </span>
 
-            <h2 className="mt-5 text-xl font-extrabold text-slate-900">
+            <h2 className="mt-4 break-words text-xl font-extrabold text-slate-900 sm:mt-5">
               Learning
             </h2>
 
-            <p className="mt-2 text-sm leading-6 text-slate-600">
+            <p className="mt-2 break-words text-sm leading-6 text-slate-600">
               Your learning paths and course features will be available here
               as we build them.
             </p>
 
-            <span className="mt-4 inline-flex rounded-full bg-amber-50 px-3 py-1 text-xs font-bold text-amber-700">
+            <span className="mt-4 inline-flex max-w-full rounded-full bg-amber-50 px-3 py-1 text-xs font-bold text-amber-700">
               Coming next
             </span>
           </section>
 
-          <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+          <section className="min-w-0 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6">
             <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-violet-50 text-2xl">
               🎯
             </span>
 
-            <h2 className="mt-5 text-xl font-extrabold text-slate-900">
+            <h2 className="mt-4 break-words text-xl font-extrabold text-slate-900 sm:mt-5">
               Online examinations
             </h2>
 
-            <p className="mt-2 text-sm leading-6 text-slate-600">
+            <p className="mt-2 break-words text-sm leading-6 text-slate-600">
               Practice tests, timed examinations, and results will be added in
               a later step.
             </p>
 
-            <span className="mt-4 inline-flex rounded-full bg-amber-50 px-3 py-1 text-xs font-bold text-amber-700">
+            <span className="mt-4 inline-flex max-w-full rounded-full bg-amber-50 px-3 py-1 text-xs font-bold text-amber-700">
               Coming next
             </span>
           </section>
@@ -584,7 +588,7 @@ function Dashboard() {
 
         {isAdmin ? <AdminCourseManagement /> : <CourseList />}
 
-        <p className="mt-6 break-words text-sm text-slate-500">
+        <p className="mt-5 break-words text-xs leading-6 text-slate-500 sm:mt-6 sm:text-sm">
           Signed in as {user.email || "your account"} · Role:{" "}
           {user.role || "STUDENT"}
         </p>
@@ -602,7 +606,7 @@ function LoginRoute() {
   return (
     <>
       {registrationSuccess && (
-        <div className="mx-auto max-w-[460px] px-4 pt-6">
+        <div className="mx-auto w-full max-w-[460px] px-3 pt-5 sm:px-4 sm:pt-6">
           <AlertMessage
             type="success"
             message="Your account was created successfully. Please sign in."
