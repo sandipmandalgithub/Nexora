@@ -118,6 +118,41 @@ public class SecurityConfig {
                     "/api/enrollments/**"
                 ).hasRole("STUDENT")
 
+                // Only Admins can view exams
+                .requestMatchers(
+                    HttpMethod.GET,
+                    "/api/exams",
+                    "/api/exams/**"
+                ).hasRole("ADMIN")
+
+                // Only Admins can create exams
+                .requestMatchers(
+                    HttpMethod.POST,
+                    "/api/exams",
+                    "/api/exams/**"
+                ).hasRole("ADMIN")
+
+                // Only Admins can update exams
+                .requestMatchers(
+                    HttpMethod.PUT,
+                    "/api/exams",
+                    "/api/exams/**"
+                ).hasRole("ADMIN")
+
+                // Only Admins can partially update exams
+                .requestMatchers(
+                    HttpMethod.PATCH,
+                    "/api/exams",
+                    "/api/exams/**"
+                ).hasRole("ADMIN")
+
+                // Only Admins can delete exams
+                .requestMatchers(
+                    HttpMethod.DELETE,
+                    "/api/exams",
+                    "/api/exams/**"
+                ).hasRole("ADMIN")
+
                 // All other endpoints require authentication
                 .anyRequest().authenticated()
             )
