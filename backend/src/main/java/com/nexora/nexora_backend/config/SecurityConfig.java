@@ -153,6 +153,37 @@ public class SecurityConfig {
                     "/api/exams/**"
                 ).hasRole("ADMIN")
 
+                // Only Admins can manage exam questions
+                .requestMatchers(
+                    HttpMethod.GET,
+                    "/api/exams/*/questions",
+                    "/api/exams/*/questions/**"
+                ).hasRole("ADMIN")
+
+                .requestMatchers(
+                    HttpMethod.POST,
+                    "/api/exams/*/questions",
+                    "/api/exams/*/questions/**"
+                ).hasRole("ADMIN")
+
+                .requestMatchers(
+                    HttpMethod.PUT,
+                    "/api/exams/*/questions",
+                    "/api/exams/*/questions/**"
+                ).hasRole("ADMIN")
+
+                .requestMatchers(
+                    HttpMethod.PATCH,
+                    "/api/exams/*/questions",
+                    "/api/exams/*/questions/**"
+                ).hasRole("ADMIN")
+
+                .requestMatchers(
+                    HttpMethod.DELETE,
+                    "/api/exams/*/questions",
+                    "/api/exams/*/questions/**"
+                ).hasRole("ADMIN")
+
                 // All other endpoints require authentication
                 .anyRequest().authenticated()
             )
