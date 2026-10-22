@@ -1,3 +1,4 @@
+
 package com.nexora.nexora_backend.config;
 
 import com.nexora.nexora_backend.security.JwtAuthenticationFilter;
@@ -92,6 +93,30 @@ public class SecurityConfig {
                     "/api/courses",
                     "/api/courses/**"
                 ).hasRole("ADMIN")
+
+                // Students and Admins can view their own enrollments
+                .requestMatchers(
+                    HttpMethod.GET,
+                    "/api/enrollments/my"
+                ).hasAnyRole("STUDENT", "ADMIN")
+
+                // Only Admins can view all enrollments
+                .requestMatchers(
+                    HttpMethod.GET,
+                    "/api/enrollments"
+                ).hasRole("ADMIN")
+
+                // Only Students can enroll in courses
+                .requestMatchers(
+                    HttpMethod.POST,
+                    "/api/enrollments/**"
+                ).hasRole("STUDENT")
+
+                // Students can cancel their own enrollments
+                .requestMatchers(
+                    HttpMethod.DELETE,
+                    "/api/enrollments/**"
+                ).hasRole("STUDENT")
 
                 // All other endpoints require authentication
                 .anyRequest().authenticated()
