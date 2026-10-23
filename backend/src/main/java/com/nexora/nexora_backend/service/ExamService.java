@@ -46,6 +46,14 @@ public class ExamService {
     }
 
     @Transactional(readOnly = true)
+    public List<ExamResponse> getPublishedExams() {
+        return examRepository.findByPublishedTrueOrderByCreatedAtDesc()
+            .stream()
+            .map(ExamResponse::from)
+            .toList();
+    }
+
+    @Transactional(readOnly = true)
     public ExamResponse getExamById(Long id) {
         return ExamResponse.from(findExam(id));
     }

@@ -4,6 +4,7 @@ package com.nexora.nexora_backend.controller;
 import java.util.List;
 
 import org.springframework.http.HttpStatus;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -29,8 +30,20 @@ public class ExamController {
     }
 
     @GetMapping
-    public List<ExamResponse> getAllExams() {
-        return examService.getAllExams();
+    public List<ExamResponse> getAllExams(
+            Authentication authentication) {
+
+        boolean isAdmin = authentication.getAuthorities()
+            .stream()
+            .anyMatch(authority ->
+                authority.getAuthority().equals("ROLE_ADMIN")
+            );
+
+        if (isAdmin) {
+            return examService.getAllExams();
+        }
+
+        return examService.getPublishedExams();
     }
 
     @GetMapping("/{id}")

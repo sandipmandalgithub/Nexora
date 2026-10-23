@@ -1,3 +1,4 @@
+
 package com.nexora.nexora_backend.config;
 
 import com.nexora.nexora_backend.security.JwtAuthenticationFilter;
@@ -117,17 +118,24 @@ public class SecurityConfig {
                     "/api/enrollments/**"
                 ).hasRole("STUDENT")
 
-                // Students can view published exam questions
-                // The response excludes correct answers
+                // Students can view published exam questions.
+                // Correct answers must not be included in the response.
                 .requestMatchers(
                     HttpMethod.GET,
                     "/api/student/exams/*/questions"
                 ).hasRole("STUDENT")
 
-                // Only Admins can view exams
+                // Students and Admins can request the exam list.
+                // The controller must return only published exams to students.
                 .requestMatchers(
                     HttpMethod.GET,
-                    "/api/exams",
+                    "/api/exams"
+                ).hasAnyRole("STUDENT", "ADMIN")
+
+                // Only Admins can view individual exam details
+                // and other exam-specific management endpoints.
+                .requestMatchers(
+                    HttpMethod.GET,
                     "/api/exams/**"
                 ).hasRole("ADMIN")
 
