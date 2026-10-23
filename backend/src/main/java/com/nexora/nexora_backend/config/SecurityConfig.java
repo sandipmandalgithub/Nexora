@@ -1,4 +1,3 @@
-
 package com.nexora.nexora_backend.config;
 
 import com.nexora.nexora_backend.security.JwtAuthenticationFilter;
@@ -118,6 +117,13 @@ public class SecurityConfig {
                     "/api/enrollments/**"
                 ).hasRole("STUDENT")
 
+                // Students can view published exam questions
+                // The response excludes correct answers
+                .requestMatchers(
+                    HttpMethod.GET,
+                    "/api/student/exams/*/questions"
+                ).hasRole("STUDENT")
+
                 // Only Admins can view exams
                 .requestMatchers(
                     HttpMethod.GET,
@@ -182,6 +188,33 @@ public class SecurityConfig {
                     HttpMethod.DELETE,
                     "/api/exams/*/questions",
                     "/api/exams/*/questions/**"
+                ).hasRole("ADMIN")
+
+                // Students can start exams and submit their answers
+                .requestMatchers(
+                    HttpMethod.POST,
+                    "/api/exam-attempts/exams/*/start",
+                    "/api/exam-attempts/*/submit"
+                ).hasRole("STUDENT")
+
+                // Students can view only their own attempts
+                .requestMatchers(
+                    HttpMethod.GET,
+                    "/api/exam-attempts/my",
+                    "/api/exam-attempts/my/**"
+                ).hasRole("STUDENT")
+
+                // Only Admins can view all attempts
+                .requestMatchers(
+                    HttpMethod.GET,
+                    "/api/exam-attempts",
+                    "/api/exam-attempts/"
+                ).hasRole("ADMIN")
+
+                // Only Admins can view a specific attempt
+                .requestMatchers(
+                    HttpMethod.GET,
+                    "/api/exam-attempts/*"
                 ).hasRole("ADMIN")
 
                 // All other endpoints require authentication
