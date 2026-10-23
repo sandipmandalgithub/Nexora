@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import {
   Link,
@@ -11,6 +10,7 @@ import {
 import axios from "axios";
 import Home from "./Home";
 import AdminCourseManagement from "./components/AdminCourseManagement";
+import AdminQuestionManagement from "./components/AdminQuestionManagement";
 
 const API_BASE_URL = "http://localhost:8080/api";
 
@@ -1728,7 +1728,7 @@ function Dashboard() {
                 Welcome{user.fullName ? `, ${user.fullName}` : " to Nexora"}!
               </h1>
               <p className="mt-3 break-words text-sm leading-6 text-slate-300">
-                Manage your learning platform and course content.
+                Manage courses, examinations, and question content from one place.
               </p>
             </div>
 
@@ -1746,6 +1746,8 @@ function Dashboard() {
           </div>
 
           <AdminCourseManagement />
+
+          <AdminQuestionManagement />
 
           <p className="mt-6 break-words text-sm text-slate-500">
             Signed in as {user.email || "your account"} · Role:{" "}
