@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import axios from "axios";
 import CourseList from "./CourseList";
@@ -12,14 +11,6 @@ const tabs = [
   { id: "results", label: "My Results" },
   { id: "profile", label: "Profile" },
 ];
-
-function readUser() {
-  try {
-    return JSON.parse(localStorage.getItem("nexoraUser") || "{}");
-  } catch {
-    return {};
-  }
-}
 
 function getErrorMessage(error) {
   if (!error.response) {
