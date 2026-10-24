@@ -1,4 +1,3 @@
-
 package com.nexora.nexora_backend.controller;
 
 import java.util.List;
@@ -15,6 +14,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.nexora.nexora_backend.dto.ExamAttemptResponse;
 import com.nexora.nexora_backend.dto.ExamSubmissionRequest;
+import com.nexora.nexora_backend.dto.StudentExamAnalyticsResponse;
 import com.nexora.nexora_backend.service.ExamAttemptService;
 
 @RestController
@@ -46,6 +46,15 @@ public class ExamAttemptController {
 
         return ResponseEntity.ok(
                 attemptService.getMyAttempts(authentication.getName())
+        );
+    }
+
+    @GetMapping("/my/analytics")
+    public ResponseEntity<StudentExamAnalyticsResponse> getMyAnalytics(
+            Authentication authentication) {
+
+        return ResponseEntity.ok(
+                attemptService.getMyAnalytics(authentication.getName())
         );
     }
 

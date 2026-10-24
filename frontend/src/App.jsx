@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import {
   Link,
@@ -524,6 +525,7 @@ function StudentDashboard({ user }) {
   const [enrollments, setEnrollments] = useState([]);
   const [exams, setExams] = useState([]);
   const [attempts, setAttempts] = useState([]);
+  const [analytics, setAnalytics] = useState(null);
 
   const [loading, setLoading] = useState(true);
   const [errors, setErrors] = useState({});
@@ -561,6 +563,7 @@ function StudentDashboard({ user }) {
         axios.get(`${API_BASE_URL}/enrollments/my`, { headers }),
         axios.get(`${API_BASE_URL}/exams`, { headers }),
         axios.get(`${API_BASE_URL}/exam-attempts/my`, { headers }),
+        axios.get(`${API_BASE_URL}/exam-attempts/my/analytics`, { headers }),
       ]);
 
       if (!active) return;
@@ -594,6 +597,13 @@ function StudentDashboard({ user }) {
         );
       } else {
         nextErrors.results = getApiError(results[2].reason);
+      }
+
+      if (results[3].status === "fulfilled") {
+        setAnalytics(results[3].value.data);
+      } else {
+        setAnalytics(null);
+        nextErrors.analytics = getApiError(results[3].reason);
       }
 
       setErrors(nextErrors);
@@ -1366,6 +1376,73 @@ function StudentDashboard({ user }) {
     );
   }
 
+  function renderAnalytics() {
+    if (errors.analytics) {
+      return (
+        <AlertMessage
+          message={`Unable to load exam analytics. ${errors.analytics}`}
+        />
+      );
+    }
+
+    if (loading) {
+      return (
+        <p className="py-4 text-sm text-slate-500" role="status">
+          Loading exam analytics...
+        </p>
+      );
+    }
+
+    if (!analytics) {
+      return (
+        <EmptyState
+          icon="📊"
+          title="Analytics unavailable"
+          description="Your exam analytics could not be loaded. Use Refresh to try again."
+        />
+      );
+    }
+
+    return (
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+        <StatCard
+          icon="📝"
+          label="Total Attempts"
+          value={analytics.totalAttempts ?? 0}
+          description="All your exam attempts"
+        />
+
+        <StatCard
+          icon="✅"
+          label="Submitted Exams"
+          value={analytics.submittedAttempts ?? 0}
+          description="Exams submitted successfully"
+        />
+
+        <StatCard
+          icon="⏳"
+          label="In Progress"
+          value={analytics.inProgressAttempts ?? 0}
+          description="Exams awaiting submission"
+        />
+
+        <StatCard
+          icon="📈"
+          label="Average Score"
+          value={`${Number(analytics.averagePercentage ?? 0).toFixed(2)}%`}
+          description="Average across submitted exams"
+        />
+
+        <StatCard
+          icon="🏆"
+          label="Best Score"
+          value={`${Number(analytics.bestPercentage ?? 0).toFixed(2)}%`}
+          description="Your highest exam percentage"
+        />
+      </div>
+    );
+  }
+
   function renderOverview() {
     return (
       <>
@@ -1393,6 +1470,19 @@ function StudentDashboard({ user }) {
             description="Exam attempts marked as completed"
           />
         </div>
+
+        <section className="mt-7 min-w-0">
+          <div className="mb-4">
+            <h2 className="text-xl font-black text-slate-900">
+              Exam Analytics
+            </h2>
+            <p className="mt-1 text-sm text-slate-500">
+              Track your examination performance and progress
+            </p>
+          </div>
+
+          {renderAnalytics()}
+        </section>
 
         <section className="mt-7 min-w-0">
           <div className="mb-4 flex flex-wrap items-center justify-between gap-3">

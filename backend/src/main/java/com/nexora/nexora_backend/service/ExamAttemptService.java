@@ -1,3 +1,4 @@
+
 package com.nexora.nexora_backend.service;
 
 import java.time.LocalDateTime;
@@ -14,6 +15,7 @@ import org.springframework.web.server.ResponseStatusException;
 import com.nexora.nexora_backend.dto.ExamAttemptResponse;
 import com.nexora.nexora_backend.dto.ExamSubmissionRequest;
 import com.nexora.nexora_backend.dto.ExamSubmissionRequest.AnswerSubmission;
+import com.nexora.nexora_backend.dto.StudentExamAnalyticsResponse;
 import com.nexora.nexora_backend.entity.Exam;
 import com.nexora.nexora_backend.entity.ExamAttempt;
 import com.nexora.nexora_backend.entity.ExamAttempt.AttemptStatus;
@@ -110,6 +112,51 @@ public class ExamAttemptService {
                 ));
 
         return ExamAttemptResponse.from(attempt);
+    }
+
+    @Transactional(readOnly = true)
+    public StudentExamAnalyticsResponse getMyAnalytics(String email) {
+        User student = findStudent(email);
+
+        List<ExamAttempt> attempts = attemptRepository
+                .findByStudent_IdOrderByStartedAtDesc(student.getId());
+
+        long totalAttempts = attempts.size();
+
+        long submittedAttempts = attempts.stream()
+                .filter(attempt -> attempt.getStatus() == AttemptStatus.SUBMITTED)
+                .count();
+
+        long inProgressAttempts = attempts.stream()
+                .filter(attempt -> attempt.getStatus() == AttemptStatus.IN_PROGRESS)
+                .count();
+
+        List<Double> percentages = attempts.stream()
+                .filter(attempt -> attempt.getStatus() == AttemptStatus.SUBMITTED)
+                .filter(attempt -> attempt.getScore() != null)
+                .filter(attempt -> attempt.getTotalMarks() != null
+                        && attempt.getTotalMarks() > 0)
+                .map(attempt -> attempt.getScore() * 100.0
+                        / attempt.getTotalMarks())
+                .toList();
+
+        double averagePercentage = percentages.stream()
+                .mapToDouble(Double::doubleValue)
+                .average()
+                .orElse(0.0);
+
+        double bestPercentage = percentages.stream()
+                .mapToDouble(Double::doubleValue)
+                .max()
+                .orElse(0.0);
+
+        return new StudentExamAnalyticsResponse(
+                totalAttempts,
+                submittedAttempts,
+                inProgressAttempts,
+                roundToTwoDecimals(averagePercentage),
+                roundToTwoDecimals(bestPercentage)
+        );
     }
 
     public ExamAttemptResponse submitAttempt(
@@ -263,6 +310,10 @@ public class ExamAttemptService {
                 ));
 
         return ExamAttemptResponse.from(attempt);
+    }
+
+    private double roundToTwoDecimals(double value) {
+        return Math.round(value * 100.0) / 100.0;
     }
 
     private User findStudent(String email) {
