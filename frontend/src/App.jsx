@@ -1,5 +1,4 @@
-
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   Link,
   Navigate,
@@ -144,6 +143,46 @@ function getApiError(error) {
   }
 
   return "Something went wrong. Please try again.";
+}
+
+/* Timed exam helpers */
+
+function getExamDeadline(attempt, exam) {
+  if (!attempt?.startedAt || !exam?.durationMinutes) {
+    return null;
+  }
+
+  const startedAt = new Date(attempt.startedAt).getTime();
+  const durationMs = Number(exam.durationMinutes) * 60 * 1000;
+
+  if (
+    !Number.isFinite(startedAt) ||
+    !Number.isFinite(durationMs) ||
+    durationMs <= 0
+  ) {
+    return null;
+  }
+
+  return startedAt + durationMs;
+}
+
+function formatRemainingTime(totalSeconds) {
+  const safeSeconds = Math.max(0, totalSeconds);
+  const hours = Math.floor(safeSeconds / 3600);
+  const minutes = Math.floor((safeSeconds % 3600) / 60);
+  const seconds = safeSeconds % 60;
+
+  if (hours > 0) {
+    return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(
+      2,
+      "0"
+    )}:${String(seconds).padStart(2, "0")}`;
+  }
+
+  return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(
+    2,
+    "0"
+  )}`;
 }
 
 function Login() {
@@ -542,6 +581,12 @@ function StudentDashboard({ user }) {
   const [submissionResult, setSubmissionResult] = useState(null);
   const [showSubmitConfirmation, setShowSubmitConfirmation] = useState(false);
 
+  const [remainingSeconds, setRemainingSeconds] = useState(null);
+
+  const submitLockRef = useRef(false);
+  const recoveredAttemptIdRef = useRef(null);
+  const autoSubmitAttemptRef = useRef(null);
+
   const token = localStorage.getItem("nexoraToken");
 
   const authHeaders = {
@@ -627,14 +672,18 @@ function StudentDashboard({ user }) {
     setRefreshKey((key) => key + 1);
   }
 
-  async function loadExamQuestions(examId) {
+  const loadExamQuestions = useCallback(async (examId) => {
     setQuestionsLoading(true);
     setQuestionsError("");
 
     try {
       const response = await axios.get(
         `${API_BASE_URL}/student/exams/${examId}/questions`,
-        { headers: authHeaders }
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
       );
 
       setExamSession((current) => {
@@ -652,7 +701,130 @@ function StudentDashboard({ user }) {
     } finally {
       setQuestionsLoading(false);
     }
-  }
+  }, [token]);
+
+  /*
+   * Recover an in-progress attempt after a page refresh or a new login.
+   * The answers are restored from this browser's localStorage.
+   */
+  useEffect(() => {
+    if (
+      loading ||
+      examSession ||
+      submissionResult ||
+      errors.exams ||
+      errors.results
+    ) {
+      return;
+    }
+
+    const inProgressAttempt = attempts
+      .filter(
+        (attempt) =>
+          String(attempt.status || "").toUpperCase() === "IN_PROGRESS"
+      )
+      .sort(
+        (a, b) =>
+          new Date(b.startedAt || 0).getTime() -
+          new Date(a.startedAt || 0).getTime()
+      )[0];
+
+    if (!inProgressAttempt) return;
+
+    const attemptId = inProgressAttempt.id;
+
+    if (
+      attemptId == null ||
+      recoveredAttemptIdRef.current === String(attemptId)
+    ) {
+      return;
+    }
+
+    const attemptExamId =
+      inProgressAttempt.examId ?? inProgressAttempt.exam?.id;
+
+    const matchingExam = exams.find(
+      (exam) => String(exam.id) === String(attemptExamId)
+    );
+
+    if (!matchingExam) return;
+
+    recoveredAttemptIdRef.current = String(attemptId);
+
+    let savedAnswers = {};
+
+    try {
+      const storedAnswers = JSON.parse(
+        localStorage.getItem(`nexoraExamAnswers:${attemptId}`) || "{}"
+      );
+
+      if (
+        storedAnswers &&
+        typeof storedAnswers === "object" &&
+        !Array.isArray(storedAnswers)
+      ) {
+        savedAnswers = storedAnswers;
+      }
+    } catch {
+      savedAnswers = {};
+    }
+
+    const recoveryTimerId = window.setTimeout(() => {
+      setAnswers(savedAnswers);
+      setQuestionsError("");
+      setSubmissionError("");
+      setSubmissionResult(null);
+      setExamActionError("");
+      setShowSubmitConfirmation(false);
+
+      setExamSession({
+        exam: matchingExam,
+        attempt: inProgressAttempt,
+        questions: [],
+      });
+
+      setActiveTab("Available Exams");
+      loadExamQuestions(matchingExam.id);
+    }, 0);
+
+    return () => window.clearTimeout(recoveryTimerId);
+  }, [
+    loading,
+    exams,
+    attempts,
+    examSession,
+    submissionResult,
+    errors.exams,
+    errors.results,
+    loadExamQuestions,
+  ]);
+
+  /*
+   * Save answers after every answer change.
+   * This recovery is limited to the same browser/device.
+   */
+  useEffect(() => {
+    const attemptId = examSession?.attempt?.id;
+
+    if (attemptId == null || submissionResult) return undefined;
+
+    try {
+      localStorage.setItem(
+        `nexoraExamAnswers:${attemptId}`,
+        JSON.stringify(answers)
+      );
+    } catch {
+      const errorTimerId = window.setTimeout(() => {
+        setSubmissionError(
+          "Your answers could not be saved in this browser. Please keep the exam page open."
+        );
+      }, 0);
+
+      return () => window.clearTimeout(errorTimerId);
+    }
+
+    return undefined;
+  }, [examSession?.attempt?.id, answers, submissionResult]);
 
   async function handleStartExam(exam) {
     if (startingExamId !== null || examSession) return;
@@ -664,6 +836,7 @@ function StudentDashboard({ user }) {
     setSubmissionResult(null);
     setAnswers({});
     setShowSubmitConfirmation(false);
+    setRemainingSeconds(null);
 
     try {
       const response = await axios.post(
@@ -680,6 +853,10 @@ function StudentDashboard({ user }) {
         );
         return;
       }
+
+      submitLockRef.current = false;
+      autoSubmitAttemptRef.current = null;
+      recoveredAttemptIdRef.current = String(attempt.id);
 
       setExamSession({
         exam,
@@ -698,7 +875,7 @@ function StudentDashboard({ user }) {
   }
 
   function handleAnswerChange(questionId, selectedOption) {
-    if (submissionResult || submittingExam) return;
+    if (submissionResult || submittingExam || remainingSeconds === 0) return;
 
     setAnswers((previous) => ({
       ...previous,
@@ -706,9 +883,18 @@ function StudentDashboard({ user }) {
     }));
   }
 
-  async function handleSubmitExam() {
-    if (!examSession || !examSession.attempt?.id || submittingExam) return;
+  const handleSubmitExam = useCallback(async () => {
+    if (
+      !examSession ||
+      !examSession.attempt?.id ||
+      submittingExam ||
+      submitLockRef.current ||
+      submissionResult
+    ) {
+      return;
+    }
 
+    submitLockRef.current = true;
     setSubmittingExam(true);
     setSubmissionError("");
     setShowSubmitConfirmation(false);
@@ -726,19 +912,90 @@ function StudentDashboard({ user }) {
       const response = await axios.post(
         `${API_BASE_URL}/exam-attempts/${examSession.attempt.id}/submit`,
         { answers: submittedAnswers },
-        { headers: authHeaders }
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
       );
 
       setSubmissionResult(response.data);
-      refreshDashboard();
+      setRemainingSeconds(null);
+
+      localStorage.removeItem(
+        `nexoraExamAnswers:${examSession.attempt.id}`
+      );
+
+      setRefreshKey((key) => key + 1);
     } catch (error) {
       setSubmissionError(getApiError(error));
     } finally {
+      submitLockRef.current = false;
       setSubmittingExam(false);
     }
-  }
+  }, [
+    examSession,
+    submittingExam,
+    submissionResult,
+    answers,
+    token,
+  ]);
+
+  /*
+   * Calculate the countdown from the server-provided attempt start time.
+   * This means refreshing the page does not reset the exam duration.
+   */
+  useEffect(() => {
+    if (!examSession || submissionResult) {
+      return;
+    }
+
+    const attemptId = examSession.attempt?.id;
+
+    const deadline = getExamDeadline(
+      examSession.attempt,
+      examSession.exam
+    );
+
+    if (deadline == null) {
+      return;
+    }
+
+    function updateTimer() {
+      const secondsLeft = Math.max(
+        0,
+        Math.ceil((deadline - Date.now()) / 1000)
+      );
+
+      setRemainingSeconds(secondsLeft);
+
+      if (secondsLeft <= 0) {
+        const attemptKey = String(attemptId);
+
+        if (autoSubmitAttemptRef.current !== attemptKey) {
+          autoSubmitAttemptRef.current = attemptKey;
+
+          if (!submitLockRef.current) {
+            handleSubmitExam();
+          }
+        }
+      }
+    }
+
+    updateTimer();
+
+    const timerId = window.setInterval(updateTimer, 1000);
+
+    return () => window.clearInterval(timerId);
+  }, [examSession, submissionResult, handleSubmitExam]);
 
   function closeExamSession() {
+    const attemptId = examSession?.attempt?.id;
+
+    if (submissionResult && attemptId != null) {
+      localStorage.removeItem(`nexoraExamAnswers:${attemptId}`);
+    }
+
     setExamSession(null);
     setAnswers({});
     setQuestionsError("");
@@ -746,6 +1003,8 @@ function StudentDashboard({ user }) {
     setSubmissionError("");
     setSubmissionResult(null);
     setShowSubmitConfirmation(false);
+    setRemainingSeconds(null);
+
     refreshDashboard();
   }
 
@@ -885,7 +1144,8 @@ function StudentDashboard({ user }) {
             </h3>
 
             <p className="mt-2 break-words text-sm leading-6 text-slate-600">
-              {exam.description || "Test your knowledge with this examination."}
+              {exam.description ||
+                "Test your knowledge with this examination."}
             </p>
 
             {exam.courseTitle && (
@@ -931,7 +1191,9 @@ function StudentDashboard({ user }) {
           </h2>
 
           <p className="mt-2 break-words text-sm leading-6 text-slate-500">
-            {result.examTitle || examSession?.exam?.title || "Your examination"}
+            {result.examTitle ||
+              examSession?.exam?.title ||
+              "Your examination"}
           </p>
         </div>
 
@@ -1011,6 +1273,8 @@ function StudentDashboard({ user }) {
     ).length;
     const unansweredCount = Math.max(questions.length - answeredCount, 0);
 
+    const timerExpired = remainingSeconds === 0;
+
     return (
       <section className="mx-auto max-w-4xl">
         <div className="mb-5 flex flex-col justify-between gap-4 sm:flex-row sm:items-start">
@@ -1028,13 +1292,57 @@ function StudentDashboard({ user }) {
             </p>
           </div>
 
-          <div className="shrink-0 rounded-xl border border-slate-200 bg-white px-4 py-3">
-            <p className="text-xs font-semibold text-slate-500">Attempt ID</p>
-            <p className="mt-1 text-lg font-black text-slate-900">
-              {examSession.attempt.id}
-            </p>
+          <div className="flex flex-wrap items-start gap-3">
+            <div className="shrink-0 rounded-xl border border-slate-200 bg-white px-4 py-3">
+              <p className="text-xs font-semibold text-slate-500">
+                Attempt ID
+              </p>
+              <p className="mt-1 text-lg font-black text-slate-900">
+                {examSession.attempt.id}
+              </p>
+            </div>
+
+            <div
+              className={`shrink-0 rounded-xl border px-4 py-3 ${
+                remainingSeconds !== null && remainingSeconds <= 60
+                  ? "border-red-300 bg-red-50"
+                  : "border-indigo-200 bg-indigo-50"
+              }`}
+            >
+              <p className="text-xs font-semibold text-slate-600">
+                Time Remaining
+              </p>
+
+              <p
+                className={`mt-1 text-2xl font-black tabular-nums ${
+                  remainingSeconds !== null && remainingSeconds <= 60
+                    ? "text-red-700"
+                    : "text-indigo-700"
+                }`}
+                role="timer"
+                aria-live="off"
+              >
+                {remainingSeconds === null
+                  ? "--:--"
+                  : formatRemainingTime(remainingSeconds)}
+              </p>
+            </div>
           </div>
         </div>
+
+        {timerExpired && (
+          <div className="mb-5">
+            <AlertMessage
+              message={
+                submittingExam
+                  ? "Time is up. Your answers are being submitted automatically..."
+                  : submissionError
+                    ? "Time is up, but automatic submission failed. Please use Submit Exam to retry."
+                    : "Time is up. Your exam is being submitted automatically..."
+              }
+            />
+          </div>
+        )}
 
         <div className="mb-5 grid grid-cols-2 gap-3 sm:grid-cols-3">
           <div className="rounded-xl border border-slate-200 bg-white p-4">
@@ -1066,10 +1374,12 @@ function StudentDashboard({ user }) {
             <button
               type="button"
               onClick={() => loadExamQuestions(examSession.exam.id)}
-              disabled={questionsLoading}
+              disabled={questionsLoading || timerExpired}
               className="min-h-10 rounded-xl border border-indigo-200 px-4 py-2 text-sm font-bold text-indigo-700 transition hover:bg-indigo-50 disabled:opacity-50"
             >
-              {questionsLoading ? "Loading questions..." : "Retry loading questions"}
+              {questionsLoading
+                ? "Loading questions..."
+                : "Retry loading questions"}
             </button>
           </div>
         )}
@@ -1099,7 +1409,9 @@ function StudentDashboard({ user }) {
                 ["B", question.optionB],
                 ["C", question.optionC],
                 ["D", question.optionD],
-              ].filter(([, value]) => value != null && String(value).trim() !== "");
+              ].filter(
+                ([, value]) => value != null && String(value).trim() !== ""
+              );
 
               return (
                 <article
@@ -1113,7 +1425,8 @@ function StudentDashboard({ user }) {
 
                     {question.marks != null && (
                       <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-600">
-                        {question.marks} {question.marks === 1 ? "mark" : "marks"}
+                        {question.marks}{" "}
+                        {question.marks === 1 ? "mark" : "marks"}
                       </span>
                     )}
                   </div>
@@ -1133,7 +1446,11 @@ function StudentDashboard({ user }) {
                       return (
                         <label
                           key={letter}
-                          className={`flex min-w-0 cursor-pointer items-start gap-3 rounded-xl border p-3 transition sm:p-4 ${
+                          className={`flex min-w-0 items-start gap-3 rounded-xl border p-3 transition sm:p-4 ${
+                            timerExpired
+                              ? "cursor-not-allowed opacity-70"
+                              : "cursor-pointer"
+                          } ${
                             selected
                               ? "border-indigo-500 bg-indigo-50 ring-2 ring-indigo-500/10"
                               : "border-slate-200 bg-white hover:border-indigo-200 hover:bg-slate-50"
@@ -1151,7 +1468,11 @@ function StudentDashboard({ user }) {
                             onChange={() =>
                               handleAnswerChange(question.id, letter)
                             }
-                            disabled={Boolean(submissionResult) || submittingExam}
+                            disabled={
+                              Boolean(submissionResult) ||
+                              submittingExam ||
+                              timerExpired
+                            }
                             className="mt-1 h-4 w-4 shrink-0 accent-indigo-600"
                           />
 
@@ -1198,7 +1519,7 @@ function StudentDashboard({ user }) {
           <div className="mt-4 flex flex-col gap-3 sm:flex-row">
             <button
               type="button"
-              onClick={() => setShowSubmitConfirmation(true)}
+              onClick={handleSubmitExam}
               disabled={
                 submittingExam ||
                 questionsLoading ||
@@ -1207,17 +1528,29 @@ function StudentDashboard({ user }) {
               }
               className="min-h-11 rounded-xl bg-indigo-600 px-5 py-3 text-sm font-bold text-white transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50"
             >
-              {submittingExam ? "Submitting exam..." : "Submit Exam"}
+              {submittingExam
+                ? "Submitting exam..."
+                : timerExpired
+                  ? "Retry Submission"
+                  : "Submit Exam"}
             </button>
 
             <button
               type="button"
               onClick={() => {
+                if (
+                  !window.confirm(
+                    "Your exam is still in progress. Your saved answers will remain in this browser. Leave the exam screen?"
+                  )
+                ) {
+                  return;
+                }
+
                 setExamSession(null);
-                setAnswers({});
                 setQuestionsError("");
                 setSubmissionError("");
                 setShowSubmitConfirmation(false);
+                setActiveTab("Available Exams");
               }}
               disabled={submittingExam}
               className="min-h-11 rounded-xl border border-slate-300 bg-white px-5 py-3 text-sm font-bold text-slate-700 transition hover:bg-slate-50 disabled:opacity-50"
@@ -1225,6 +1558,22 @@ function StudentDashboard({ user }) {
               Back to Dashboard
             </button>
           </div>
+
+          {!timerExpired && (
+            <button
+              type="button"
+              onClick={() => setShowSubmitConfirmation(true)}
+              disabled={
+                submittingExam ||
+                questionsLoading ||
+                questions.length === 0 ||
+                Boolean(questionsError)
+              }
+              className="mt-3 min-h-11 rounded-xl border border-indigo-200 bg-white px-5 py-3 text-sm font-bold text-indigo-700 transition hover:bg-indigo-50 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              Review Before Submit
+            </button>
+          )}
         </div>
 
         {showSubmitConfirmation && (
@@ -1246,7 +1595,8 @@ function StudentDashboard({ user }) {
               </h3>
 
               <p className="mt-3 text-sm leading-6 text-slate-600">
-                You have answered {answeredCount} of {questions.length} questions.
+                You have answered {answeredCount} of {questions.length}{" "}
+                questions.
                 {unansweredCount > 0
                   ? " Unanswered questions will be submitted without a selected answer."
                   : " You have selected an answer for every question."}
@@ -1657,13 +2007,12 @@ function StudentDashboard({ user }) {
                 onClick={() => {
                   if (examSession && !submissionResult) {
                     const leave = window.confirm(
-                      "Your exam attempt is still in progress. Leave the exam screen?"
+                      "Your exam attempt is still in progress. Leave the exam screen? Your answers will be saved in this browser."
                     );
 
                     if (!leave) return;
 
                     setExamSession(null);
-                    setAnswers({});
                     setQuestionsError("");
                     setSubmissionError("");
                     setShowSubmitConfirmation(false);
@@ -1818,7 +2167,8 @@ function Dashboard() {
                 Welcome{user.fullName ? `, ${user.fullName}` : " to Nexora"}!
               </h1>
               <p className="mt-3 break-words text-sm leading-6 text-slate-300">
-                Manage courses, examinations, and question content from one place.
+                Manage courses, examinations, and question content from one
+                place.
               </p>
             </div>
 
