@@ -26,6 +26,8 @@ function StudentDashboard({ user }) {
   const [questionsLoading, setQuestionsLoading] = useState(false);
   const [questionsError, setQuestionsError] = useState("");
   const [answers, setAnswers] = useState({});
+  const [markedForReview, setMarkedForReview] = useState({});
+  const [activeQuestionId, setActiveQuestionId] = useState(null);
   const [submittingExam, setSubmittingExam] = useState(false);
   const [submissionError, setSubmissionError] = useState("");
   const [submissionResult, setSubmissionResult] = useState(null);
@@ -219,8 +221,28 @@ function StudentDashboard({ user }) {
       savedAnswers = {};
     }
 
+    let savedReviewMarks = {};
+
+    try {
+      const storedReviewMarks = JSON.parse(
+        localStorage.getItem(`nexoraExamReview:${attemptId}`) || "{}"
+      );
+
+      if (
+        storedReviewMarks &&
+        typeof storedReviewMarks === "object" &&
+        !Array.isArray(storedReviewMarks)
+      ) {
+        savedReviewMarks = storedReviewMarks;
+      }
+    } catch {
+      savedReviewMarks = {};
+    }
+
     const recoveryTimerId = window.setTimeout(() => {
       setAnswers(savedAnswers);
+      setMarkedForReview(savedReviewMarks);
+      setActiveQuestionId(null);
       setQuestionsError("");
       setSubmissionError("");
       setSubmissionResult(null);
@@ -276,6 +298,41 @@ function StudentDashboard({ user }) {
     return undefined;
   }, [examSession?.attempt?.id, answers, submissionResult]);
 
+  /*
+   * Save question review markers for the current attempt so they survive refresh.
+   */
+  useEffect(() => {
+    const attemptId = examSession?.attempt?.id;
+
+    if (attemptId == null || submissionResult) return;
+
+    try {
+      localStorage.setItem(
+        `nexoraExamReview:${attemptId}`,
+        JSON.stringify(markedForReview)
+      );
+    } catch {
+      // Review markers are helpful but should never block an exam.
+    }
+  }, [examSession?.attempt?.id, markedForReview, submissionResult]);
+
+  function toggleQuestionReview(questionId) {
+    if (submissionResult || submittingExam || remainingSeconds === 0) return;
+
+    setMarkedForReview((previous) => ({
+      ...previous,
+      [questionId]: !previous[questionId],
+    }));
+  }
+
+  function navigateToQuestion(questionId) {
+    setActiveQuestionId(questionId);
+    document.getElementById(`exam-question-${questionId}`)?.scrollIntoView({
+      behavior: "smooth",
+      block: "start",
+    });
+  }
+
   async function handleStartExam(exam) {
     if (startingExamId !== null || examSession) return;
 
@@ -285,6 +342,8 @@ function StudentDashboard({ user }) {
     setSubmissionError("");
     setSubmissionResult(null);
     setAnswers({});
+    setMarkedForReview({});
+    setActiveQuestionId(null);
     setShowSubmitConfirmation(false);
     setRemainingSeconds(null);
 
@@ -375,6 +434,9 @@ function StudentDashboard({ user }) {
       localStorage.removeItem(
         `nexoraExamAnswers:${examSession.attempt.id}`
       );
+      localStorage.removeItem(
+        `nexoraExamReview:${examSession.attempt.id}`
+      );
 
       setRefreshKey((key) => key + 1);
     } catch (error) {
@@ -444,10 +506,13 @@ function StudentDashboard({ user }) {
 
     if (submissionResult && attemptId != null) {
       localStorage.removeItem(`nexoraExamAnswers:${attemptId}`);
+      localStorage.removeItem(`nexoraExamReview:${attemptId}`);
     }
 
     setExamSession(null);
     setAnswers({});
+    setMarkedForReview({});
+    setActiveQuestionId(null);
     setQuestionsError("");
     setExamActionError("");
     setSubmissionError("");
@@ -852,8 +917,75 @@ function StudentDashboard({ user }) {
         )}
 
         {questions.length > 0 && (
-          <div className="space-y-5">
-            {questions.map((question, index) => {
+          <>
+            <section
+              aria-labelledby="question-navigation-title"
+              className="mb-5 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5"
+            >
+              <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-start">
+                <div>
+                  <h3
+                    id="question-navigation-title"
+                    className="text-base font-black text-slate-900"
+                  >
+                    Question Navigation
+                  </h3>
+                  <p className="mt-1 text-sm leading-6 text-slate-500">
+                    Select a question number to jump to it. Mark questions you want to review before submitting.
+                  </p>
+                </div>
+                <div className="flex flex-wrap gap-x-4 gap-y-2 text-xs font-semibold text-slate-600">
+                  <span className="inline-flex items-center gap-2">
+                    <span className="h-3 w-3 rounded bg-emerald-500" />
+                    Answered ({answeredCount})
+                  </span>
+                  <span className="inline-flex items-center gap-2">
+                    <span className="h-3 w-3 rounded border border-slate-300 bg-white" />
+                    Unanswered ({unansweredCount})
+                  </span>
+                  <span className="inline-flex items-center gap-2">
+                    <span className="h-3 w-3 rounded bg-amber-400" />
+                    For review ({Object.values(markedForReview).filter(Boolean).length})
+                  </span>
+                </div>
+              </div>
+
+              <div className="mt-4 grid grid-cols-5 gap-2 sm:grid-cols-8 md:grid-cols-10">
+                {questions.map((question, index) => {
+                  const isAnswered = Boolean(answers[question.id]);
+                  const isMarked = Boolean(markedForReview[question.id]);
+                  const isActive = String(activeQuestionId) === String(question.id);
+
+                  return (
+                    <button
+                      key={question.id}
+                      type="button"
+                      onClick={() => navigateToQuestion(question.id)}
+                      aria-label={`Go to question ${question.questionOrder ?? index + 1}${isAnswered ? ", answered" : ", unanswered"}${isMarked ? ", marked for review" : ""}`}
+                      aria-current={isActive ? "location" : undefined}
+                      className={`relative flex min-h-11 items-center justify-center rounded-xl border text-sm font-black transition focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 ${
+                        isMarked
+                          ? "border-amber-400 bg-amber-100 text-amber-900"
+                          : isAnswered
+                            ? "border-emerald-500 bg-emerald-500 text-white"
+                            : "border-slate-300 bg-white text-slate-700 hover:border-indigo-400 hover:bg-indigo-50"
+                      } ${isActive ? "ring-2 ring-indigo-500 ring-offset-2" : ""}`}
+                    >
+                      {question.questionOrder ?? index + 1}
+                      {isMarked && (
+                        <span
+                          aria-hidden="true"
+                          className="absolute -right-1 -top-1 h-2.5 w-2.5 rounded-full border border-white bg-amber-500"
+                        />
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            </section>
+
+            <div className="space-y-5">
+              {questions.map((question, index) => {
               const options = [
                 ["A", question.optionA],
                 ["B", question.optionB],
@@ -866,19 +998,46 @@ function StudentDashboard({ user }) {
               return (
                 <article
                   key={question.id}
-                  className="min-w-0 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6"
+                  id={`exam-question-${question.id}`}
+                  className={`min-w-0 scroll-mt-5 rounded-2xl border bg-white p-4 shadow-sm transition sm:p-6 ${
+                    activeQuestionId != null && String(activeQuestionId) === String(question.id)
+                      ? "border-indigo-400 ring-2 ring-indigo-100"
+                      : "border-slate-200"
+                  }`}
                 >
                   <div className="flex flex-wrap items-start justify-between gap-3">
-                    <p className="text-xs font-bold uppercase tracking-wide text-indigo-600">
-                      Question {question.questionOrder ?? index + 1}
-                    </p>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <p className="text-xs font-bold uppercase tracking-wide text-indigo-600">
+                        Question {question.questionOrder ?? index + 1}
+                      </p>
+                      {markedForReview[question.id] && (
+                        <span className="rounded-full bg-amber-100 px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-wide text-amber-800">
+                          Marked for review
+                        </span>
+                      )}
+                    </div>
 
-                    {question.marks != null && (
-                      <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-600">
-                        {question.marks}{" "}
-                        {question.marks === 1 ? "mark" : "marks"}
-                      </span>
-                    )}
+                    <div className="flex flex-wrap items-center gap-2">
+                      {question.marks != null && (
+                        <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-600">
+                          {question.marks}{" "}
+                          {question.marks === 1 ? "mark" : "marks"}
+                        </span>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => toggleQuestionReview(question.id)}
+                        disabled={submittingExam || timerExpired}
+                        aria-pressed={Boolean(markedForReview[question.id])}
+                        className={`min-h-9 rounded-lg border px-3 py-2 text-xs font-bold transition disabled:cursor-not-allowed disabled:opacity-50 ${
+                          markedForReview[question.id]
+                            ? "border-amber-300 bg-amber-100 text-amber-900 hover:bg-amber-200"
+                            : "border-slate-200 bg-white text-slate-600 hover:border-amber-300 hover:bg-amber-50 hover:text-amber-800"
+                        }`}
+                      >
+                        {markedForReview[question.id] ? "✓ Marked for Review" : "Mark for Review"}
+                      </button>
+                    </div>
                   </div>
 
                   <h3 className="mt-3 break-words text-base font-bold leading-7 text-slate-900 sm:text-lg">
@@ -945,8 +1104,9 @@ function StudentDashboard({ user }) {
                   </fieldset>
                 </article>
               );
-            })}
-          </div>
+              })}
+            </div>
+          </>
         )}
 
         <div className="mt-6 rounded-2xl border border-amber-200 bg-amber-50 p-4 sm:p-5">
