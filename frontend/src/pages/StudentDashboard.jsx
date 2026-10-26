@@ -33,6 +33,11 @@ function StudentDashboard({ user }) {
   const [submissionResult, setSubmissionResult] = useState(null);
   const [showSubmitConfirmation, setShowSubmitConfirmation] = useState(false);
 
+  const [reviewAttemptId, setReviewAttemptId] = useState(null);
+  const [attemptReview, setAttemptReview] = useState(null);
+  const [reviewLoading, setReviewLoading] = useState(false);
+  const [reviewError, setReviewError] = useState("");
+
   const [remainingSeconds, setRemainingSeconds] = useState(null);
 
   const submitLockRef = useRef(false);
@@ -341,6 +346,9 @@ function StudentDashboard({ user }) {
     setQuestionsError("");
     setSubmissionError("");
     setSubmissionResult(null);
+    setReviewAttemptId(null);
+    setAttemptReview(null);
+    setReviewError("");
     setAnswers({});
     setMarkedForReview({});
     setActiveQuestionId(null);
@@ -383,6 +391,7 @@ function StudentDashboard({ user }) {
     }
   }
 
+  
   function handleAnswerChange(questionId, selectedOption) {
     if (submissionResult || submittingExam || remainingSeconds === 0) return;
 
@@ -393,6 +402,7 @@ function StudentDashboard({ user }) {
   }
 
   const handleSubmitExam = useCallback(async () => {
+
     if (
       !examSession ||
       !examSession.attempt?.id ||
@@ -501,6 +511,191 @@ function StudentDashboard({ user }) {
     return () => window.clearInterval(timerId);
   }, [examSession, submissionResult, handleSubmitExam]);
 
+  async function handleViewDetailedReview(attemptId) {
+    if (attemptId == null) {
+      setReviewError("The attempt ID is not available, so its review cannot be loaded.");
+      return;
+    }
+
+    setReviewAttemptId(attemptId);
+    setAttemptReview(null);
+    setReviewError("");
+    setReviewLoading(true);
+
+    try {
+      const response = await axios.get(
+        `${API_BASE_URL}/exam-attempts/${attemptId}/review`,
+        { headers: authHeaders }
+      );
+
+      setAttemptReview(response.data);
+      setActiveTab("My Results");
+    } catch (error) {
+      setReviewError(getApiError(error));
+    } finally {
+      setReviewLoading(false);
+    }
+  }
+
+  function renderDetailedReview() {
+    if (reviewLoading) {
+      return (
+        <div className="mt-6 rounded-2xl border border-indigo-200 bg-white p-5" role="status">
+          <p className="text-sm font-semibold text-indigo-700">Loading detailed exam review...</p>
+        </div>
+      );
+    }
+
+    if (reviewError) {
+      return (
+        <div className="mt-6 rounded-2xl border border-red-200 bg-white p-5">
+          <AlertMessage message={`Unable to load detailed review. ${reviewError}`} />
+          {reviewAttemptId != null && (
+            <button
+              type="button"
+              onClick={() => handleViewDetailedReview(reviewAttemptId)}
+              className="mt-3 min-h-10 rounded-xl border border-indigo-200 px-4 py-2 text-sm font-bold text-indigo-700 hover:bg-indigo-50"
+            >
+              Retry review
+            </button>
+          )}
+        </div>
+      );
+    }
+
+    if (!attemptReview) return null;
+
+    const reviewQuestions = Array.isArray(attemptReview.questions)
+      ? attemptReview.questions
+      : [];
+    const score = attemptReview.score;
+    const totalMarks = attemptReview.totalMarks;
+    const percentage = totalMarks > 0 && score != null
+      ? ((Number(score) / Number(totalMarks)) * 100).toFixed(2)
+      : null;
+
+    return (
+      <section className="mt-6 rounded-3xl border border-indigo-200 bg-white p-4 shadow-sm sm:p-6">
+        <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-start">
+          <div className="min-w-0">
+            <span className="inline-flex rounded-full bg-indigo-50 px-3 py-1 text-xs font-bold text-indigo-700">
+              Submitted attempt review
+            </span>
+            <h2 className="mt-3 break-words text-xl font-black text-slate-950 sm:text-2xl">
+              Detailed Exam Review
+            </h2>
+            <p className="mt-1 break-words text-sm text-slate-500">
+              {attemptReview.examTitle || "Your examination"} · Attempt #{attemptReview.attemptId}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => {
+              setAttemptReview(null);
+              setReviewAttemptId(null);
+              setReviewError("");
+            }}
+            className="min-h-10 shrink-0 rounded-xl border border-slate-200 px-4 py-2 text-sm font-bold text-slate-700 hover:bg-slate-50"
+          >
+            Close Review
+          </button>
+        </div>
+
+        <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-3">
+          <div className="rounded-2xl bg-indigo-50 p-4">
+            <p className="text-xs font-bold uppercase tracking-wide text-indigo-700">Final Score</p>
+            <p className="mt-2 text-2xl font-black text-slate-950">
+              {score ?? "—"}{totalMarks != null ? ` / ${totalMarks}` : ""}
+            </p>
+          </div>
+          <div className="rounded-2xl bg-slate-50 p-4">
+            <p className="text-xs font-bold uppercase tracking-wide text-slate-500">Percentage</p>
+            <p className="mt-2 text-2xl font-black text-slate-950">
+              {percentage == null ? "—" : `${percentage}%`}
+            </p>
+          </div>
+          <div className="rounded-2xl bg-slate-50 p-4">
+            <p className="text-xs font-bold uppercase tracking-wide text-slate-500">Questions Reviewed</p>
+            <p className="mt-2 text-2xl font-black text-slate-950">{reviewQuestions.length}</p>
+          </div>
+        </div>
+
+        {attemptReview.submittedAt && (
+          <p className="mt-4 text-xs text-slate-500">
+            Submitted: {String(attemptReview.submittedAt).replace("T", " ")}
+          </p>
+        )}
+
+        {reviewQuestions.length === 0 ? (
+          <div className="mt-5 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm leading-6 text-amber-900">
+            No question-level review data was returned for this attempt.
+          </div>
+        ) : (
+          <div className="mt-5 space-y-4">
+            {reviewQuestions.map((question, index) => {
+              const result = String(question.result || "UNANSWERED").toUpperCase();
+              const isCorrect = result === "CORRECT";
+              const isUnanswered = !question.selectedOption && !question.selectedAnswer;
+              const statusLabel = isCorrect ? "Correct" : isUnanswered ? "Unanswered" : "Incorrect";
+              const selectedText = question.selectedAnswer || (question.selectedOption ? `Option ${question.selectedOption}` : "No answer selected");
+              const correctText = question.correctAnswer || (question.correctOption ? `Option ${question.correctOption}` : "Correct answer unavailable");
+
+              return (
+                <article
+                  key={question.questionId ?? index}
+                  className={`rounded-2xl border p-4 sm:p-5 ${
+                    isCorrect ? "border-emerald-200 bg-emerald-50/50" : isUnanswered ? "border-amber-200 bg-amber-50/50" : "border-red-200 bg-red-50/40"
+                  }`}
+                >
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <p className="text-xs font-extrabold uppercase tracking-wide text-slate-500">
+                      Question {question.questionOrder ?? index + 1}
+                    </p>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className={`rounded-full px-3 py-1 text-xs font-extrabold ${
+                        isCorrect ? "bg-emerald-100 text-emerald-800" : isUnanswered ? "bg-amber-100 text-amber-800" : "bg-red-100 text-red-800"
+                      }`}>
+                        {statusLabel}
+                      </span>
+                      <span className="rounded-full bg-white/80 px-3 py-1 text-xs font-bold text-slate-700">
+                        Marks: {question.awardedMarks ?? 0} / {question.marks ?? 0}
+                      </span>
+                    </div>
+                  </div>
+
+                  <h3 className="mt-3 break-words text-base font-bold leading-7 text-slate-900">
+                    {question.questionText || `Question #${question.questionId ?? index + 1}`}
+                  </h3>
+
+                  <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-2">
+                    <div className="rounded-xl border border-slate-200 bg-white p-4">
+                      <p className="text-xs font-bold uppercase tracking-wide text-slate-500">Your Answer</p>
+                      <p className={`mt-2 break-words text-sm font-semibold leading-6 ${isCorrect ? "text-emerald-800" : isUnanswered ? "text-amber-800" : "text-red-800"}`}>
+                        {selectedText}
+                      </p>
+                      {question.selectedOption && question.selectedAnswer && (
+                        <p className="mt-1 text-xs text-slate-500">Option {question.selectedOption}</p>
+                      )}
+                    </div>
+                    <div className="rounded-xl border border-emerald-200 bg-white p-4">
+                      <p className="text-xs font-bold uppercase tracking-wide text-emerald-700">Correct Answer</p>
+                      <p className="mt-2 break-words text-sm font-semibold leading-6 text-emerald-800">
+                        {correctText}
+                      </p>
+                      {question.correctOption && question.correctAnswer && (
+                        <p className="mt-1 text-xs text-slate-500">Option {question.correctOption}</p>
+                      )}
+                    </div>
+                  </div>
+                </article>
+              );
+            })}
+          </div>
+        )}
+      </section>
+    );
+  }
+
   function closeExamSession() {
     const attemptId = examSession?.attempt?.id;
 
@@ -604,8 +799,7 @@ function StudentDashboard({ user }) {
       </div>
     );
   }
-
-  function renderExams(limit) {
+    function renderExams(limit) {
     const list =
       typeof limit === "number" ? exams.slice(0, limit) : exams;
 
@@ -748,7 +942,16 @@ function StudentDashboard({ user }) {
           </p>
         )}
 
-        <div className="mt-7 flex flex-col justify-center gap-3 sm:flex-row">
+        <div className="mt-7 flex flex-col justify-center gap-3 sm:flex-row sm:flex-wrap">
+          <button
+            type="button"
+            onClick={() => handleViewDetailedReview(result.id ?? examSession?.attempt?.id)}
+            disabled={reviewLoading}
+            className="min-h-11 rounded-xl bg-emerald-600 px-5 py-3 text-sm font-bold text-white transition hover:bg-emerald-700 disabled:cursor-wait disabled:opacity-60"
+          >
+            {reviewLoading ? "Loading Review..." : "Detailed Exam Review"}
+          </button>
+
           <button
             type="button"
             onClick={() => {
@@ -779,7 +982,12 @@ function StudentDashboard({ user }) {
     if (!examSession) return null;
 
     if (submissionResult) {
-      return renderExamResult(submissionResult);
+      return (
+        <>
+          {renderExamResult(submissionResult)}
+          {reviewAttemptId != null && renderDetailedReview()}
+        </>
+      );
     }
 
     const questions = examSession.questions || [];
@@ -990,7 +1198,7 @@ function StudentDashboard({ user }) {
                 ["A", question.optionA],
                 ["B", question.optionB],
                 ["C", question.optionC],
-                ["D", question.optionD],
+                                ["D", question.optionD],
               ].filter(
                 ([, value]) => value != null && String(value).trim() !== ""
               );
@@ -1273,14 +1481,16 @@ function StudentDashboard({ user }) {
     }
 
     return (
+      <>
       <div className="overflow-x-auto rounded-xl border border-slate-200">
-        <table className="w-full min-w-[520px] border-collapse text-left text-sm">
+        <table className="w-full min-w-[720px] border-collapse text-left text-sm">
           <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
             <tr>
               <th className="px-4 py-3 font-bold">Exam</th>
               <th className="px-4 py-3 font-bold">Score</th>
               <th className="px-4 py-3 font-bold">Status</th>
               <th className="px-4 py-3 font-bold">Date</th>
+              <th className="px-4 py-3 font-bold">Review</th>
             </tr>
           </thead>
 
@@ -1327,12 +1537,28 @@ function StudentDashboard({ user }) {
                   <td className="px-4 py-4 text-slate-500">
                     {date ? String(date).slice(0, 10) : "—"}
                   </td>
+                  <td className="px-4 py-4">
+                    {["SUBMITTED", "COMPLETED", "GRADED"].includes(status.toUpperCase()) ? (
+                      <button
+                        type="button"
+                        onClick={() => handleViewDetailedReview(attempt.id ?? attempt.attemptId)}
+                        disabled={reviewLoading}
+                        className="min-h-9 whitespace-nowrap rounded-lg bg-indigo-50 px-3 py-2 text-xs font-extrabold text-indigo-700 transition hover:bg-indigo-100 disabled:opacity-50"
+                      >
+                        View Review
+                      </button>
+                    ) : (
+                      <span className="text-xs text-slate-400">Available after submission</span>
+                    )}
+                  </td>
                 </tr>
               );
             })}
           </tbody>
         </table>
       </div>
+      {reviewAttemptId != null && renderDetailedReview()}
+      </>
     );
   }
 
@@ -1371,8 +1597,7 @@ function StudentDashboard({ user }) {
           value={analytics.totalAttempts ?? 0}
           description="All your exam attempts"
         />
-
-        <StatCard
+                <StatCard
           icon="✅"
           label="Submitted Exams"
           value={analytics.submittedAttempts ?? 0}
@@ -1584,6 +1809,7 @@ function StudentDashboard({ user }) {
     Profile: renderProfile,
   };
 
+
   return (
     <main className="min-h-screen bg-slate-50">
       <div className="mx-auto flex w-full max-w-[1500px] flex-col lg:min-h-screen lg:flex-row">
@@ -1748,5 +1974,6 @@ function StudentDashboard({ user }) {
     </main>
   );
 }
+
 
 export default StudentDashboard;

@@ -1,3 +1,4 @@
+
 package com.nexora.nexora_backend.controller;
 
 import java.util.List;
@@ -13,6 +14,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.nexora.nexora_backend.dto.ExamAttemptResponse;
+import com.nexora.nexora_backend.dto.ExamAttemptReviewResponse;
 import com.nexora.nexora_backend.dto.ExamSubmissionRequest;
 import com.nexora.nexora_backend.dto.StudentExamAnalyticsResponse;
 import com.nexora.nexora_backend.service.ExamAttemptService;
@@ -34,8 +36,7 @@ public class ExamAttemptController {
 
         ExamAttemptResponse response = attemptService.startAttempt(
                 examId,
-                authentication.getName()
-        );
+                authentication.getName());
 
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
@@ -45,8 +46,7 @@ public class ExamAttemptController {
             Authentication authentication) {
 
         return ResponseEntity.ok(
-                attemptService.getMyAttempts(authentication.getName())
-        );
+                attemptService.getMyAttempts(authentication.getName()));
     }
 
     @GetMapping("/my/analytics")
@@ -54,8 +54,7 @@ public class ExamAttemptController {
             Authentication authentication) {
 
         return ResponseEntity.ok(
-                attemptService.getMyAnalytics(authentication.getName())
-        );
+                attemptService.getMyAnalytics(authentication.getName()));
     }
 
     @GetMapping("/my/{attemptId}")
@@ -66,9 +65,18 @@ public class ExamAttemptController {
         return ResponseEntity.ok(
                 attemptService.getMyAttempt(
                         attemptId,
-                        authentication.getName()
-                )
-        );
+                        authentication.getName()));
+    }
+
+    @GetMapping("/{attemptId}/review")
+    public ResponseEntity<ExamAttemptReviewResponse> getMyAttemptReview(
+            @PathVariable Long attemptId,
+            Authentication authentication) {
+
+        return ResponseEntity.ok(
+                attemptService.getMyAttemptReview(
+                        attemptId,
+                        authentication.getName()));
     }
 
     @PostMapping("/{attemptId}/submit")
@@ -81,9 +89,7 @@ public class ExamAttemptController {
                 attemptService.submitAttempt(
                         attemptId,
                         authentication.getName(),
-                        request
-                )
-        );
+                        request));
     }
 
     @GetMapping
@@ -96,7 +102,6 @@ public class ExamAttemptController {
             @PathVariable Long attemptId) {
 
         return ResponseEntity.ok(
-                attemptService.getAttemptById(attemptId)
-        );
+                attemptService.getAttemptById(attemptId));
     }
 }
