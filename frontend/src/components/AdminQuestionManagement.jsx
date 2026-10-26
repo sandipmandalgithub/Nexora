@@ -1,8 +1,8 @@
-
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import axios from "axios";
 
 const API_BASE_URL = "http://localhost:8080/api";
+const QUESTIONS_PER_PAGE = 10;
 
 const EMPTY_FORM = {
   questionText: "",
@@ -59,6 +59,9 @@ function AdminQuestionManagement() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
+  const [searchTerm, setSearchTerm] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+
   const fetchExams = useCallback(async () => {
     setLoadingExams(true);
     setError("");
@@ -90,32 +93,35 @@ function AdminQuestionManagement() {
     }
   }, []);
 
-  const fetchQuestions = useCallback(async (examId = selectedExamId) => {
-    if (!examId) {
-      setQuestions([]);
-      setLoadingQuestions(false);
-      return;
-    }
+  const fetchQuestions = useCallback(
+    async (examId = selectedExamId) => {
+      if (!examId) {
+        setQuestions([]);
+        setLoadingQuestions(false);
+        return;
+      }
 
-    setLoadingQuestions(true);
-    setError("");
+      setLoadingQuestions(true);
+      setError("");
 
-    try {
-      const response = await axios.get(
-        `${API_BASE_URL}/exams/${examId}/questions`,
-        getConfig()
-      );
+      try {
+        const response = await axios.get(
+          `${API_BASE_URL}/exams/${examId}/questions`,
+          getConfig()
+        );
 
-      setQuestions(Array.isArray(response.data) ? response.data : []);
-    } catch (requestError) {
-      setQuestions([]);
-      setError(getErrorMessage(requestError));
-    } finally {
-      setLoadingQuestions(false);
-    }
-  }, [selectedExamId]);
+        setQuestions(Array.isArray(response.data) ? response.data : []);
+        setCurrentPage(1);
+      } catch (requestError) {
+        setQuestions([]);
+        setError(getErrorMessage(requestError));
+      } finally {
+        setLoadingQuestions(false);
+      }
+    },
+    [selectedExamId]
+  );
 
-  // Load exams when the component mounts.
   useEffect(() => {
     let active = true;
 
@@ -162,10 +168,11 @@ function AdminQuestionManagement() {
     };
   }, []);
 
-  // Load questions whenever a valid exam is selected.
+  // Load questions only when an exam is selected.
+  // No synchronous state updates are made for the empty-exam case.
   useEffect(() => {
     if (!selectedExamId) {
-      return;
+      return undefined;
     }
 
     let active = true;
@@ -181,9 +188,8 @@ function AdminQuestionManagement() {
         );
 
         if (active) {
-          setQuestions(
-            Array.isArray(response.data) ? response.data : []
-          );
+          setQuestions(Array.isArray(response.data) ? response.data : []);
+          setCurrentPage(1);
         }
       } catch (requestError) {
         if (active) {
@@ -299,6 +305,7 @@ function AdminQuestionManagement() {
       }
 
       resetForm();
+      setCurrentPage(1);
       await fetchQuestions(selectedExamId);
     } catch (requestError) {
       setError(getErrorMessage(requestError));
@@ -343,9 +350,16 @@ function AdminQuestionManagement() {
     setSelectedExamId(examId);
     setQuestions([]);
     setLoadingQuestions(Boolean(examId));
+    setSearchTerm("");
+    setCurrentPage(1);
     resetForm();
     setError("");
     setSuccess("");
+  }
+
+  function handleSearchChange(event) {
+    setSearchTerm(event.target.value);
+    setCurrentPage(1);
   }
 
   const selectedExam = exams.find(
@@ -357,8 +371,109 @@ function AdminQuestionManagement() {
     0
   );
 
+  const filteredQuestions = useMemo(() => {
+    const query = searchTerm.trim().toLowerCase();
+
+    return [...questions]
+      .sort(
+        (a, b) =>
+          Number(a.questionOrder || 0) - Number(b.questionOrder || 0)
+      )
+      .filter((question) => {
+        if (!query) return true;
+
+        const searchableText = [
+          question.questionText,
+          question.optionA,
+          question.optionB,
+          question.optionC,
+          question.optionD,
+          question.questionOrder,
+        ]
+          .map((value) => String(value ?? ""))
+          .join(" ")
+          .toLowerCase();
+
+        return searchableText.includes(query);
+      });
+  }, [questions, searchTerm]);
+
+  const totalPages = Math.ceil(
+    filteredQuestions.length / QUESTIONS_PER_PAGE
+  );
+
+  const safeCurrentPage = Math.min(currentPage, Math.max(totalPages, 1));
+  const startIndex = (safeCurrentPage - 1) * QUESTIONS_PER_PAGE;
+
+  const paginatedQuestions = filteredQuestions.slice(
+    startIndex,
+    startIndex + QUESTIONS_PER_PAGE
+  );
+
   const inputClass =
     "w-full min-w-0 rounded-xl border border-slate-300 bg-white px-3 py-3 text-sm text-slate-900 outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100";
+
+  function renderPagination() {
+    if (totalPages <= 1) return null;
+
+    const pages = Array.from(
+      { length: totalPages },
+      (_, index) => index + 1
+    );
+
+    return (
+      <nav
+        aria-label="Question pagination"
+        className="flex flex-col gap-3 border-t border-slate-200 pt-4 sm:flex-row sm:items-center sm:justify-between"
+      >
+        <p className="text-sm text-slate-500">
+          Showing {startIndex + 1}–
+          {Math.min(startIndex + QUESTIONS_PER_PAGE, filteredQuestions.length)}{" "}
+          of {filteredQuestions.length} questions
+        </p>
+
+        <div className="flex flex-wrap items-center gap-1.5">
+          <button
+            type="button"
+            onClick={() =>
+              setCurrentPage((page) => Math.max(1, page - 1))
+            }
+            disabled={safeCurrentPage === 1}
+            className="rounded-lg border border-slate-300 px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            Previous
+          </button>
+
+          {pages.map((page) => (
+            <button
+              key={page}
+              type="button"
+              onClick={() => setCurrentPage(page)}
+              aria-current={safeCurrentPage === page ? "page" : undefined}
+              className={`min-w-10 rounded-lg border px-3 py-2 text-sm font-semibold transition ${
+                safeCurrentPage === page
+                  ? "border-indigo-600 bg-indigo-600 text-white"
+                  : "border-slate-300 text-slate-700 hover:bg-slate-50"
+              }`}
+            >
+              {page}
+            </button>
+          ))}
+
+          <button
+            type="button"
+            onClick={() =>
+              setCurrentPage((page) => Math.min(totalPages, page + 1))
+            }
+            disabled={safeCurrentPage === totalPages}
+            className="rounded-lg border border-slate-300 px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            Next
+          </button>
+        </div>
+      </nav>
+    );
+  }
 
   return (
     <section className="mt-6 min-w-0 space-y-5 sm:mt-8 sm:space-y-6">
@@ -629,7 +744,7 @@ function AdminQuestionManagement() {
       </div>
 
       <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6 lg:p-7">
-        <div className="flex items-start justify-between gap-3">
+        <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-start">
           <div>
             <h3 className="text-lg font-extrabold text-slate-900 sm:text-xl">
               Exam questions
@@ -640,9 +755,47 @@ function AdminQuestionManagement() {
             </p>
           </div>
 
-          <span className="shrink-0 rounded-full bg-indigo-50 px-3 py-1 text-sm font-bold text-indigo-700">
-            {questions.length}
+          <span className="w-fit shrink-0 rounded-full bg-indigo-50 px-3 py-1 text-sm font-bold text-indigo-700">
+            {filteredQuestions.length}{" "}
+            {filteredQuestions.length === 1 ? "question" : "questions"}
           </span>
+        </div>
+
+        <div className="mt-5">
+          <label
+            htmlFor="question-search"
+            className="mb-2 block text-sm font-semibold text-slate-700"
+          >
+            Search questions
+          </label>
+
+          <div className="relative">
+            <input
+              id="question-search"
+              type="search"
+              value={searchTerm}
+              onChange={handleSearchChange}
+              placeholder="Search question text or options..."
+              className={inputClass}
+            />
+
+            {searchTerm && (
+              <button
+                type="button"
+                onClick={() => {
+                  setSearchTerm("");
+                  setCurrentPage(1);
+                }}
+                className="mt-2 text-sm font-semibold text-indigo-600 hover:text-indigo-800"
+              >
+                Clear search
+              </button>
+            )}
+          </div>
+
+          <p className="mt-2 text-xs text-slate-500">
+            Search checks question text, options and question order.
+          </p>
         </div>
 
         {loadingExams && (
@@ -679,9 +832,32 @@ function AdminQuestionManagement() {
             </div>
           )}
 
-        {!loadingQuestions && questions.length > 0 && (
+        {!loadingQuestions &&
+          questions.length > 0 &&
+          filteredQuestions.length === 0 && (
+            <div className="mt-5 rounded-xl border border-slate-200 bg-slate-50 p-5 text-center">
+              <p className="font-semibold text-slate-800">
+                No matching questions
+              </p>
+
+              <p className="mt-2 text-sm leading-6 text-slate-500">
+                Try a different search term or clear the search.
+              </p>
+            </div>
+          )}
+
+        {!loadingQuestions && filteredQuestions.length > 0 && (
           <div className="mt-5 space-y-4">
-            {questions.map((question) => (
+            <p className="text-sm text-slate-500">
+              Showing {startIndex + 1}–
+              {Math.min(
+                startIndex + QUESTIONS_PER_PAGE,
+                filteredQuestions.length
+              )}{" "}
+              of {filteredQuestions.length} matching questions
+            </p>
+
+            {paginatedQuestions.map((question) => (
               <article
                 key={question.id}
                 className="min-w-0 rounded-xl border border-slate-200 p-4 sm:p-5"
@@ -755,6 +931,8 @@ function AdminQuestionManagement() {
                 </div>
               </article>
             ))}
+
+            {renderPagination()}
           </div>
         )}
       </div>

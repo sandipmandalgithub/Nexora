@@ -391,7 +391,6 @@ function StudentDashboard({ user }) {
     }
   }
 
-  
   function handleAnswerChange(questionId, selectedOption) {
     if (submissionResult || submittingExam || remainingSeconds === 0) return;
 
@@ -402,7 +401,6 @@ function StudentDashboard({ user }) {
   }
 
   const handleSubmitExam = useCallback(async () => {
-
     if (
       !examSession ||
       !examSession.attempt?.id ||
@@ -636,6 +634,7 @@ function StudentDashboard({ user }) {
               const result = String(question.result || "UNANSWERED").toUpperCase();
               const isCorrect = result === "CORRECT";
               const isUnanswered = !question.selectedOption && !question.selectedAnswer;
+              //const isIncorrect = !isCorrect && !isUnanswered;
               const statusLabel = isCorrect ? "Correct" : isUnanswered ? "Unanswered" : "Incorrect";
               const selectedText = question.selectedAnswer || (question.selectedOption ? `Option ${question.selectedOption}` : "No answer selected");
               const correctText = question.correctAnswer || (question.correctOption ? `Option ${question.correctOption}` : "Correct answer unavailable");
@@ -799,7 +798,8 @@ function StudentDashboard({ user }) {
       </div>
     );
   }
-    function renderExams(limit) {
+
+  function renderExams(limit) {
     const list =
       typeof limit === "number" ? exams.slice(0, limit) : exams;
 
@@ -1194,124 +1194,124 @@ function StudentDashboard({ user }) {
 
             <div className="space-y-5">
               {questions.map((question, index) => {
-              const options = [
-                ["A", question.optionA],
-                ["B", question.optionB],
-                ["C", question.optionC],
-                                ["D", question.optionD],
-              ].filter(
-                ([, value]) => value != null && String(value).trim() !== ""
-              );
+                const options = [
+                  ["A", question.optionA],
+                  ["B", question.optionB],
+                  ["C", question.optionC],
+                  ["D", question.optionD],
+                ].filter(
+                  ([, value]) => value != null && String(value).trim() !== ""
+                );
 
-              return (
-                <article
-                  key={question.id}
-                  id={`exam-question-${question.id}`}
-                  className={`min-w-0 scroll-mt-5 rounded-2xl border bg-white p-4 shadow-sm transition sm:p-6 ${
-                    activeQuestionId != null && String(activeQuestionId) === String(question.id)
-                      ? "border-indigo-400 ring-2 ring-indigo-100"
-                      : "border-slate-200"
-                  }`}
-                >
-                  <div className="flex flex-wrap items-start justify-between gap-3">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <p className="text-xs font-bold uppercase tracking-wide text-indigo-600">
-                        Question {question.questionOrder ?? index + 1}
-                      </p>
-                      {markedForReview[question.id] && (
-                        <span className="rounded-full bg-amber-100 px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-wide text-amber-800">
-                          Marked for review
-                        </span>
-                      )}
-                    </div>
+                return (
+                  <article
+                    key={question.id}
+                    id={`exam-question-${question.id}`}
+                    className={`min-w-0 scroll-mt-5 rounded-2xl border bg-white p-4 shadow-sm transition sm:p-6 ${
+                      activeQuestionId != null && String(activeQuestionId) === String(question.id)
+                        ? "border-indigo-400 ring-2 ring-indigo-100"
+                        : "border-slate-200"
+                    }`}
+                  >
+                    <div className="flex flex-wrap items-start justify-between gap-3">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <p className="text-xs font-bold uppercase tracking-wide text-indigo-600">
+                          Question {question.questionOrder ?? index + 1}
+                        </p>
+                        {markedForReview[question.id] && (
+                          <span className="rounded-full bg-amber-100 px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-wide text-amber-800">
+                            Marked for review
+                          </span>
+                        )}
+                      </div>
 
-                    <div className="flex flex-wrap items-center gap-2">
-                      {question.marks != null && (
-                        <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-600">
-                          {question.marks}{" "}
-                          {question.marks === 1 ? "mark" : "marks"}
-                        </span>
-                      )}
-                      <button
-                        type="button"
-                        onClick={() => toggleQuestionReview(question.id)}
-                        disabled={submittingExam || timerExpired}
-                        aria-pressed={Boolean(markedForReview[question.id])}
-                        className={`min-h-9 rounded-lg border px-3 py-2 text-xs font-bold transition disabled:cursor-not-allowed disabled:opacity-50 ${
-                          markedForReview[question.id]
-                            ? "border-amber-300 bg-amber-100 text-amber-900 hover:bg-amber-200"
-                            : "border-slate-200 bg-white text-slate-600 hover:border-amber-300 hover:bg-amber-50 hover:text-amber-800"
-                        }`}
-                      >
-                        {markedForReview[question.id] ? "✓ Marked for Review" : "Mark for Review"}
-                      </button>
-                    </div>
-                  </div>
-
-                  <h3 className="mt-3 break-words text-base font-bold leading-7 text-slate-900 sm:text-lg">
-                    {question.questionText}
-                  </h3>
-
-                  <fieldset className="mt-5 space-y-3">
-                    <legend className="sr-only">
-                      Select an answer for question {index + 1}
-                    </legend>
-
-                    {options.map(([letter, value]) => {
-                      const selected = answers[question.id] === letter;
-
-                      return (
-                        <label
-                          key={letter}
-                          className={`flex min-w-0 items-start gap-3 rounded-xl border p-3 transition sm:p-4 ${
-                            timerExpired
-                              ? "cursor-not-allowed opacity-70"
-                              : "cursor-pointer"
-                          } ${
-                            selected
-                              ? "border-indigo-500 bg-indigo-50 ring-2 ring-indigo-500/10"
-                              : "border-slate-200 bg-white hover:border-indigo-200 hover:bg-slate-50"
-                          } ${
-                            submissionResult || submittingExam
-                              ? "cursor-not-allowed opacity-80"
-                              : ""
+                      <div className="flex flex-wrap items-center gap-2">
+                        {question.marks != null && (
+                          <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-600">
+                            {question.marks}{" "}
+                            {question.marks === 1 ? "mark" : "marks"}
+                          </span>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => toggleQuestionReview(question.id)}
+                          disabled={submittingExam || timerExpired}
+                          aria-pressed={Boolean(markedForReview[question.id])}
+                          className={`min-h-9 rounded-lg border px-3 py-2 text-xs font-bold transition disabled:cursor-not-allowed disabled:opacity-50 ${
+                            markedForReview[question.id]
+                              ? "border-amber-300 bg-amber-100 text-amber-900 hover:bg-amber-200"
+                              : "border-slate-200 bg-white text-slate-600 hover:border-amber-300 hover:bg-amber-50 hover:text-amber-800"
                           }`}
                         >
-                          <input
-                            type="radio"
-                            name={`question-${question.id}`}
-                            value={letter}
-                            checked={selected}
-                            onChange={() =>
-                              handleAnswerChange(question.id, letter)
-                            }
-                            disabled={
-                              Boolean(submissionResult) ||
-                              submittingExam ||
-                              timerExpired
-                            }
-                            className="mt-1 h-4 w-4 shrink-0 accent-indigo-600"
-                          />
+                          {markedForReview[question.id] ? "✓ Marked for Review" : "Mark for Review"}
+                        </button>
+                      </div>
+                    </div>
 
-                          <span
-                            className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-xs font-black ${
+                    <h3 className="mt-3 break-words text-base font-bold leading-7 text-slate-900 sm:text-lg">
+                      {question.questionText}
+                    </h3>
+
+                    <fieldset className="mt-5 space-y-3">
+                      <legend className="sr-only">
+                        Select an answer for question {index + 1}
+                      </legend>
+
+                      {options.map(([letter, value]) => {
+                        const selected = answers[question.id] === letter;
+
+                        return (
+                          <label
+                            key={letter}
+                            className={`flex min-w-0 items-start gap-3 rounded-xl border p-3 transition sm:p-4 ${
+                              timerExpired
+                                ? "cursor-not-allowed opacity-70"
+                                : "cursor-pointer"
+                            } ${
                               selected
-                                ? "bg-indigo-600 text-white"
-                                : "bg-slate-100 text-slate-600"
+                                ? "border-indigo-500 bg-indigo-50 ring-2 ring-indigo-500/10"
+                                : "border-slate-200 bg-white hover:border-indigo-200 hover:bg-slate-50"
+                            } ${
+                              submissionResult || submittingExam
+                                ? "cursor-not-allowed opacity-80"
+                                : ""
                             }`}
                           >
-                            {letter}
-                          </span>
+                            <input
+                              type="radio"
+                              name={`question-${question.id}`}
+                              value={letter}
+                              checked={selected}
+                              onChange={() =>
+                                handleAnswerChange(question.id, letter)
+                              }
+                              disabled={
+                                Boolean(submissionResult) ||
+                                submittingExam ||
+                                timerExpired
+                              }
+                              className="mt-1 h-4 w-4 shrink-0 accent-indigo-600"
+                            />
 
-                          <span className="min-w-0 break-words text-sm leading-6 text-slate-700">
-                            {value}
-                          </span>
-                        </label>
-                      );
-                    })}
-                  </fieldset>
-                </article>
-              );
+                            <span
+                              className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-xs font-black ${
+                                selected
+                                  ? "bg-indigo-600 text-white"
+                                  : "bg-slate-100 text-slate-600"
+                              }`}
+                            >
+                              {letter}
+                            </span>
+
+                            <span className="min-w-0 break-words text-sm leading-6 text-slate-700">
+                              {value}
+                            </span>
+                          </label>
+                        );
+                      })}
+                    </fieldset>
+                  </article>
+                );
               })}
             </div>
           </>
@@ -1482,82 +1482,82 @@ function StudentDashboard({ user }) {
 
     return (
       <>
-      <div className="overflow-x-auto rounded-xl border border-slate-200">
-        <table className="w-full min-w-[720px] border-collapse text-left text-sm">
-          <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
-            <tr>
-              <th className="px-4 py-3 font-bold">Exam</th>
-              <th className="px-4 py-3 font-bold">Score</th>
-              <th className="px-4 py-3 font-bold">Status</th>
-              <th className="px-4 py-3 font-bold">Date</th>
-              <th className="px-4 py-3 font-bold">Review</th>
-            </tr>
-          </thead>
+        <div className="overflow-x-auto rounded-xl border border-slate-200">
+          <table className="w-full min-w-[720px] border-collapse text-left text-sm">
+            <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
+              <tr>
+                <th className="px-4 py-3 font-bold">Exam</th>
+                <th className="px-4 py-3 font-bold">Score</th>
+                <th className="px-4 py-3 font-bold">Status</th>
+                <th className="px-4 py-3 font-bold">Date</th>
+                <th className="px-4 py-3 font-bold">Review</th>
+              </tr>
+            </thead>
 
-          <tbody className="divide-y divide-slate-100">
-            {list.map((attempt, index) => {
-              const status = String(attempt.status || "UNKNOWN");
-              const score =
-                attempt.score ??
-                attempt.marksObtained ??
-                attempt.totalScore;
+            <tbody className="divide-y divide-slate-100">
+              {list.map((attempt, index) => {
+                const status = String(attempt.status || "UNKNOWN");
+                const score =
+                  attempt.score ??
+                  attempt.marksObtained ??
+                  attempt.totalScore;
 
-              const date =
-                attempt.submittedAt ||
-                attempt.startedAt ||
-                attempt.createdAt;
+                const date =
+                  attempt.submittedAt ||
+                  attempt.startedAt ||
+                  attempt.createdAt;
 
-              return (
-                <tr
-                  key={attempt.id ?? attempt.attemptId ?? index}
-                  className="bg-white"
-                >
-                  <td className="max-w-[220px] px-4 py-4 font-semibold text-slate-800">
-                    <span className="break-words">
-                      {attempt.examTitle ||
-                        attempt.title ||
-                        (attempt.examId
-                          ? `Exam #${attempt.examId}`
-                          : `Attempt #${attempt.id ?? index + 1}`)}
-                    </span>
-                  </td>
+                return (
+                  <tr
+                    key={attempt.id ?? attempt.attemptId ?? index}
+                    className="bg-white"
+                  >
+                    <td className="max-w-[220px] px-4 py-4 font-semibold text-slate-800">
+                      <span className="break-words">
+                        {attempt.examTitle ||
+                          attempt.title ||
+                          (attempt.examId
+                            ? `Exam #${attempt.examId}`
+                            : `Attempt #${attempt.id ?? index + 1}`)}
+                      </span>
+                    </td>
 
-                  <td className="px-4 py-4 font-bold text-slate-800">
-                    {attempt.score != null && attempt.totalMarks != null
-                      ? `${attempt.score} / ${attempt.totalMarks}`
-                      : score ?? "—"}
-                  </td>
+                    <td className="px-4 py-4 font-bold text-slate-800">
+                      {attempt.score != null && attempt.totalMarks != null
+                        ? `${attempt.score} / ${attempt.totalMarks}`
+                        : score ?? "—"}
+                    </td>
 
-                  <td className="px-4 py-4">
-                    <span className="inline-flex rounded-full bg-slate-100 px-2.5 py-1 text-xs font-bold text-slate-700">
-                      {status}
-                    </span>
-                  </td>
+                    <td className="px-4 py-4">
+                      <span className="inline-flex rounded-full bg-slate-100 px-2.5 py-1 text-xs font-bold text-slate-700">
+                        {status}
+                      </span>
+                    </td>
 
-                  <td className="px-4 py-4 text-slate-500">
-                    {date ? String(date).slice(0, 10) : "—"}
-                  </td>
-                  <td className="px-4 py-4">
-                    {["SUBMITTED", "COMPLETED", "GRADED"].includes(status.toUpperCase()) ? (
-                      <button
-                        type="button"
-                        onClick={() => handleViewDetailedReview(attempt.id ?? attempt.attemptId)}
-                        disabled={reviewLoading}
-                        className="min-h-9 whitespace-nowrap rounded-lg bg-indigo-50 px-3 py-2 text-xs font-extrabold text-indigo-700 transition hover:bg-indigo-100 disabled:opacity-50"
-                      >
-                        View Review
-                      </button>
-                    ) : (
-                      <span className="text-xs text-slate-400">Available after submission</span>
-                    )}
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
-      {reviewAttemptId != null && renderDetailedReview()}
+                    <td className="px-4 py-4 text-slate-500">
+                      {date ? String(date).slice(0, 10) : "—"}
+                    </td>
+                    <td className="px-4 py-4">
+                      {["SUBMITTED", "COMPLETED", "GRADED"].includes(status.toUpperCase()) ? (
+                        <button
+                          type="button"
+                          onClick={() => handleViewDetailedReview(attempt.id ?? attempt.attemptId)}
+                          disabled={reviewLoading}
+                          className="min-h-9 whitespace-nowrap rounded-lg bg-indigo-50 px-3 py-2 text-xs font-extrabold text-indigo-700 transition hover:bg-indigo-100 disabled:opacity-50"
+                        >
+                          View Review
+                        </button>
+                      ) : (
+                        <span className="text-xs text-slate-400">Available after submission</span>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+        {reviewAttemptId != null && renderDetailedReview()}
       </>
     );
   }
@@ -1597,7 +1597,8 @@ function StudentDashboard({ user }) {
           value={analytics.totalAttempts ?? 0}
           description="All your exam attempts"
         />
-                <StatCard
+
+        <StatCard
           icon="✅"
           label="Submitted Exams"
           value={analytics.submittedAttempts ?? 0}
@@ -1809,7 +1810,6 @@ function StudentDashboard({ user }) {
     Profile: renderProfile,
   };
 
-
   return (
     <main className="min-h-screen bg-slate-50">
       <div className="mx-auto flex w-full max-w-[1500px] flex-col lg:min-h-screen lg:flex-row">
@@ -1965,8 +1965,17 @@ function StudentDashboard({ user }) {
               pageContent[activeTab]()
             )}
 
-            <footer className="mt-10 border-t border-slate-200 py-5 text-xs leading-5 text-slate-400">
-              © {new Date().getFullYear()} Nexora · Learning and online examinations
+            {/* Updated Student Footer */}
+            <footer className="mt-10 border-t border-slate-200 bg-white/70 px-4 py-5 sm:px-6 lg:px-9">
+              <div className="flex flex-col gap-2 text-xs leading-5 text-slate-500 sm:flex-row sm:items-center sm:justify-between">
+                <p>
+                  © {new Date().getFullYear()} Nexora. All rights reserved.
+                </p>
+
+                <p>
+                  Learn. Practice. Evaluate. Grow.
+                </p>
+              </div>
             </footer>
           </div>
         </div>
@@ -1974,6 +1983,5 @@ function StudentDashboard({ user }) {
     </main>
   );
 }
-
 
 export default StudentDashboard;
