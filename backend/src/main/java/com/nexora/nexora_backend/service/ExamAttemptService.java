@@ -128,18 +128,22 @@ public class ExamAttemptService {
         long totalAttempts = attempts.size();
 
         long submittedAttempts = attempts.stream()
-                .filter(attempt -> attempt.getStatus() == AttemptStatus.SUBMITTED)
+                .filter(attempt ->
+                        attempt.getStatus() == AttemptStatus.SUBMITTED)
                 .count();
 
         long inProgressAttempts = attempts.stream()
-                .filter(attempt -> attempt.getStatus() == AttemptStatus.IN_PROGRESS)
+                .filter(attempt ->
+                        attempt.getStatus() == AttemptStatus.IN_PROGRESS)
                 .count();
 
         List<Double> percentages = attempts.stream()
-                .filter(attempt -> attempt.getStatus() == AttemptStatus.SUBMITTED)
+                .filter(attempt ->
+                        attempt.getStatus() == AttemptStatus.SUBMITTED)
                 .filter(attempt -> attempt.getScore() != null)
-                .filter(attempt -> attempt.getTotalMarks() != null
-                        && attempt.getTotalMarks() > 0)
+                .filter(attempt ->
+                        attempt.getTotalMarks() != null
+                                && attempt.getTotalMarks() > 0)
                 .map(attempt -> attempt.getScore() * 100.0
                         / attempt.getTotalMarks())
                 .toList();
@@ -200,14 +204,14 @@ public class ExamAttemptService {
 
         LocalDateTime now = LocalDateTime.now();
 
-        // If the exam has expired, finalize it without scoring late answers.
         if (!now.isBefore(deadline)) {
             attempt.setScore(0);
             attempt.setTotalMarks(totalMarks);
             attempt.setStatus(AttemptStatus.SUBMITTED);
             attempt.setSubmittedAt(now);
 
-            return ExamAttemptResponse.from(attemptRepository.save(attempt));
+            return ExamAttemptResponse.from(
+                    attemptRepository.save(attempt));
         }
 
         if (request == null || request.answers() == null) {
@@ -274,7 +278,6 @@ public class ExamAttemptService {
             }
         }
 
-        // Save one record per question, including unanswered questions.
         for (ExamQuestion question : questions) {
             ExamAttemptAnswer savedAnswer = new ExamAttemptAnswer();
             savedAnswer.setAttempt(attempt);
@@ -312,10 +315,30 @@ public class ExamAttemptService {
                     "Review is available only after the exam has been submitted");
         }
 
+        return buildAttemptReview(attempt);
+    }
+
+    @Transactional(readOnly = true)
+    public ExamAttemptReviewResponse getAttemptReviewForAdmin(Long attemptId) {
+        ExamAttempt attempt = attemptRepository.findById(attemptId)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "Exam attempt not found"));
+
+        if (attempt.getStatus() != AttemptStatus.SUBMITTED) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "Review is available only after the exam has been submitted");
+        }
+
+        return buildAttemptReview(attempt);
+    }
+
+    private ExamAttemptReviewResponse buildAttemptReview(ExamAttempt attempt) {
         Map<Long, String> savedOptions = new HashMap<>();
 
         for (ExamAttemptAnswer answer :
-                answerRepository.findByAttempt_Id(attemptId)) {
+                answerRepository.findByAttempt_Id(attempt.getId())) {
             savedOptions.put(
                     answer.getQuestion().getId(),
                     answer.getSelectedOption());

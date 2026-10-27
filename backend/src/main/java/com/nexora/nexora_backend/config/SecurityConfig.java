@@ -38,7 +38,6 @@ public class SecurityConfig {
             )
             .authorizeHttpRequests(auth -> auth
 
-                // Public endpoints
                 .requestMatchers(
                     "/api/health",
                     "/api/auth/register",
@@ -46,128 +45,106 @@ public class SecurityConfig {
                     "/error"
                 ).permitAll()
 
-                // Authenticated users can access their own profile
                 .requestMatchers(
                     HttpMethod.GET,
                     "/api/users/me"
                 ).hasAnyRole("STUDENT", "ADMIN")
 
-                // Only ADMIN can access user-management endpoints
                 .requestMatchers(
                     HttpMethod.GET,
                     "/api/users",
                     "/api/users/**"
                 ).hasRole("ADMIN")
 
-                // Students and Admins can read courses
                 .requestMatchers(
                     HttpMethod.GET,
                     "/api/courses",
                     "/api/courses/**"
                 ).hasAnyRole("STUDENT", "ADMIN")
 
-                // Only Admins can create courses
                 .requestMatchers(
                     HttpMethod.POST,
                     "/api/courses",
                     "/api/courses/**"
                 ).hasRole("ADMIN")
 
-                // Only Admins can update courses
                 .requestMatchers(
                     HttpMethod.PUT,
                     "/api/courses",
                     "/api/courses/**"
                 ).hasRole("ADMIN")
 
-                // Only Admins can partially update courses
                 .requestMatchers(
                     HttpMethod.PATCH,
                     "/api/courses",
                     "/api/courses/**"
                 ).hasRole("ADMIN")
 
-                // Only Admins can delete courses
                 .requestMatchers(
                     HttpMethod.DELETE,
                     "/api/courses",
                     "/api/courses/**"
                 ).hasRole("ADMIN")
 
-                // Students and Admins can view their own enrollments
                 .requestMatchers(
                     HttpMethod.GET,
                     "/api/enrollments/my"
                 ).hasAnyRole("STUDENT", "ADMIN")
 
-                // Only Admins can view all enrollments
                 .requestMatchers(
                     HttpMethod.GET,
                     "/api/enrollments"
                 ).hasRole("ADMIN")
 
-                // Only Students can enroll in courses
                 .requestMatchers(
                     HttpMethod.POST,
                     "/api/enrollments/**"
                 ).hasRole("STUDENT")
 
-                // Students can cancel their own enrollments
                 .requestMatchers(
                     HttpMethod.DELETE,
                     "/api/enrollments/**"
                 ).hasRole("STUDENT")
 
-                // Students can view published exam questions.
-                // Correct answers must not be included in the response.
                 .requestMatchers(
                     HttpMethod.GET,
                     "/api/student/exams/*/questions"
                 ).hasRole("STUDENT")
 
-                // Students and Admins can request the exam list.
-                // The controller must return only published exams to students.
                 .requestMatchers(
                     HttpMethod.GET,
                     "/api/exams"
                 ).hasAnyRole("STUDENT", "ADMIN")
 
-                // Only Admins can view individual exam details
-                // and other exam-specific management endpoints.
                 .requestMatchers(
                     HttpMethod.GET,
                     "/api/exams/**"
                 ).hasRole("ADMIN")
 
-                // Only Admins can create exams
                 .requestMatchers(
                     HttpMethod.POST,
                     "/api/exams",
                     "/api/exams/**"
                 ).hasRole("ADMIN")
 
-                // Only Admins can update exams
                 .requestMatchers(
                     HttpMethod.PUT,
                     "/api/exams",
                     "/api/exams/**"
                 ).hasRole("ADMIN")
 
-                // Only Admins can partially update exams
                 .requestMatchers(
                     HttpMethod.PATCH,
                     "/api/exams",
                     "/api/exams/**"
                 ).hasRole("ADMIN")
 
-                // Only Admins can delete exams
                 .requestMatchers(
                     HttpMethod.DELETE,
                     "/api/exams",
                     "/api/exams/**"
                 ).hasRole("ADMIN")
 
-                // Only Admins can manage exam questions
                 .requestMatchers(
                     HttpMethod.GET,
                     "/api/exams/*/questions",
@@ -198,34 +175,35 @@ public class SecurityConfig {
                     "/api/exams/*/questions/**"
                 ).hasRole("ADMIN")
 
-                // Students can start exams and submit their answers
                 .requestMatchers(
                     HttpMethod.POST,
                     "/api/exam-attempts/exams/*/start",
                     "/api/exam-attempts/*/submit"
                 ).hasRole("STUDENT")
 
-                // Students can view only their own attempts
                 .requestMatchers(
                     HttpMethod.GET,
                     "/api/exam-attempts/my",
                     "/api/exam-attempts/my/**"
                 ).hasRole("STUDENT")
 
-                // Only Admins can view all attempts
+                // Admin report endpoints must be matched before /{attemptId}.
+                .requestMatchers(
+                    HttpMethod.GET,
+                    "/api/exam-attempts/admin/**"
+                ).hasRole("ADMIN")
+
                 .requestMatchers(
                     HttpMethod.GET,
                     "/api/exam-attempts",
                     "/api/exam-attempts/"
                 ).hasRole("ADMIN")
 
-                // Only Admins can view a specific attempt
                 .requestMatchers(
                     HttpMethod.GET,
                     "/api/exam-attempts/*"
                 ).hasRole("ADMIN")
 
-                // All other endpoints require authentication
                 .anyRequest().authenticated()
             )
             .addFilterBefore(
@@ -255,7 +233,7 @@ public class SecurityConfig {
         configuration.setAllowCredentials(false);
 
         UrlBasedCorsConfigurationSource source =
-            new UrlBasedCorsConfigurationSource();
+                new UrlBasedCorsConfigurationSource();
 
         source.registerCorsConfiguration("/**", configuration);
 

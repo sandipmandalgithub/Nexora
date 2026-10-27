@@ -1,7 +1,9 @@
+
 import { Navigate } from "react-router-dom";
 
 import AdminCourseManagement from "../components/AdminCourseManagement";
 import AdminQuestionManagement from "../components/AdminQuestionManagement";
+import AdminDetailedResults from "../components/AdminDetailedResults";
 import AdminLayout from "../layouts/AdminLayout";
 import StudentDashboard from "./StudentDashboard";
 
@@ -34,14 +36,16 @@ export default function Dashboard() {
             </h1>
 
             <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-300 sm:text-base">
-              Manage courses, examinations, and question content from one
-              professional workspace.
+              Manage courses, examinations, question content, and student
+              examination results from one professional workspace.
             </p>
           </div>
 
           <AdminCourseManagement />
 
           <AdminQuestionManagement />
+
+          <AdminDetailedResults />
 
           <div className="mt-6 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm leading-6 text-slate-500">
             Signed in as{" "}

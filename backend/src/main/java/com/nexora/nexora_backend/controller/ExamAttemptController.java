@@ -34,11 +34,10 @@ public class ExamAttemptController {
             @PathVariable Long examId,
             Authentication authentication) {
 
-        ExamAttemptResponse response = attemptService.startAttempt(
-                examId,
-                authentication.getName());
-
-        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+        return ResponseEntity.status(HttpStatus.CREATED).body(
+                attemptService.startAttempt(
+                        examId,
+                        authentication.getName()));
     }
 
     @GetMapping("/my")
@@ -68,6 +67,7 @@ public class ExamAttemptController {
                         authentication.getName()));
     }
 
+    // Student can review only their own submitted attempt.
     @GetMapping("/{attemptId}/review")
     public ResponseEntity<ExamAttemptReviewResponse> getMyAttemptReview(
             @PathVariable Long attemptId,
@@ -77,6 +77,15 @@ public class ExamAttemptController {
                 attemptService.getMyAttemptReview(
                         attemptId,
                         authentication.getName()));
+    }
+
+    // Admin detailed review. Secure this route in SecurityConfig.
+    @GetMapping("/admin/{attemptId}/review")
+    public ResponseEntity<ExamAttemptReviewResponse> getAttemptReviewForAdmin(
+            @PathVariable Long attemptId) {
+
+        return ResponseEntity.ok(
+                attemptService.getAttemptReviewForAdmin(attemptId));
     }
 
     @PostMapping("/{attemptId}/submit")
@@ -92,11 +101,13 @@ public class ExamAttemptController {
                         request));
     }
 
+    // Admin list of all attempts.
     @GetMapping
     public ResponseEntity<List<ExamAttemptResponse>> getAllAttempts() {
         return ResponseEntity.ok(attemptService.getAllAttempts());
     }
 
+    // Admin detail of a single attempt.
     @GetMapping("/{attemptId}")
     public ResponseEntity<ExamAttemptResponse> getAttemptById(
             @PathVariable Long attemptId) {
