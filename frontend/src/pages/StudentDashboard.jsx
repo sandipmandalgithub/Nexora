@@ -6,6 +6,7 @@ import { getExamDeadline, formatRemainingTime } from "../utils/examTime";
 import AlertMessage from "../components/auth/AlertMessage";
 import EmptyState from "../components/ui/EmptyState";
 import StatCard from "../components/ui/StatCard";
+import StudentPerformanceAnalytics from "../components/student/StudentPerformanceAnalytics";
 
 function StudentDashboard({ user }) {
   const navigate = useNavigate();
@@ -1589,44 +1590,50 @@ function StudentDashboard({ user }) {
       );
     }
 
-    return (
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
-        <StatCard
-          icon="📝"
-          label="Total Attempts"
-          value={analytics.totalAttempts ?? 0}
-          description="All your exam attempts"
-        />
+   return (
+  <div className="space-y-6">
+    {/* Stats Cards */}
+    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+      <StatCard
+        icon="📝"
+        label="Total Attempts"
+        value={analytics.totalAttempts ?? 0}
+        description="All your exam attempts"
+      />
 
-        <StatCard
-          icon="✅"
-          label="Submitted Exams"
-          value={analytics.submittedAttempts ?? 0}
-          description="Exams submitted successfully"
-        />
+      <StatCard
+        icon="✅"
+        label="Submitted Exams"
+        value={analytics.submittedAttempts ?? 0}
+        description="Exams submitted successfully"
+      />
 
-        <StatCard
-          icon="⏳"
-          label="In Progress"
-          value={analytics.inProgressAttempts ?? 0}
-          description="Exams awaiting submission"
-        />
+      <StatCard
+        icon="⏳"
+        label="In Progress"
+        value={analytics.inProgressAttempts ?? 0}
+        description="Exams awaiting submission"
+      />
 
-        <StatCard
-          icon="📈"
-          label="Average Score"
-          value={`${Number(analytics.averagePercentage ?? 0).toFixed(2)}%`}
-          description="Average across submitted exams"
-        />
+      <StatCard
+        icon="📈"
+        label="Average Score"
+        value={`${Number(analytics.averagePercentage ?? 0).toFixed(2)}%`}
+        description="Average across submitted exams"
+      />
 
-        <StatCard
-          icon="🏆"
-          label="Best Score"
-          value={`${Number(analytics.bestPercentage ?? 0).toFixed(2)}%`}
-          description="Your highest exam percentage"
-        />
-      </div>
-    );
+      <StatCard
+        icon="🏆"
+        label="Best Score"
+        value={`${Number(analytics.bestPercentage ?? 0).toFixed(2)}%`}
+        description="Your highest exam percentage"
+      />
+    </div>
+
+    {/* Score Trend Chart & Exam-wise Performance History */}
+    <StudentPerformanceAnalytics attempts={attempts} analytics={analytics}/>
+  </div>
+);
   }
 
   function renderOverview() {
