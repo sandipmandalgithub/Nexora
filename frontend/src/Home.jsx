@@ -1,5 +1,5 @@
-
 import { useState } from "react";
+import { Link } from "react-router-dom";
 
 const features = [
   {
@@ -33,20 +33,21 @@ const learningTopics = [
 
 function Brand({ light = false }) {
   return (
-    <a
-      href="#home"
-      className={`inline-flex min-w-0 shrink-0 items-center gap-2 ${
+    <Link
+      to="/"
+      aria-label="Nexora home"
+      className={`group inline-flex shrink-0 items-center gap-3 ${
         light ? "text-white" : "text-slate-950"
       }`}
-      aria-label="Nexora home"
     >
-      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-indigo-600 text-xl font-black text-white shadow-lg shadow-indigo-600/20">
+      <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-500 to-violet-700 text-2xl font-black text-white shadow-lg shadow-indigo-600/25 transition duration-300 group-hover:-rotate-3 group-hover:scale-105">
         N
       </span>
-      <span className="text-xl font-extrabold tracking-tight sm:text-2xl">
+
+      <span className="text-2xl font-black tracking-tight">
         Nexora<span className="text-indigo-500">.</span>
       </span>
-    </a>
+    </Link>
   );
 }
 
@@ -60,46 +61,51 @@ function Header() {
     { label: "About", href: "#about" },
   ];
 
+  const closeMenu = () => setMenuOpen(false);
+
   return (
-    <header className="sticky top-0 z-50 border-b border-slate-200/80 bg-white/95 backdrop-blur-xl">
-      <div className="mx-auto flex min-h-[68px] max-w-[1280px] items-center justify-between gap-3 px-4 py-2 sm:min-h-[76px] sm:gap-4 sm:px-6 lg:px-8">
+    <header className="sticky top-0 z-50 border-b border-slate-200/70 bg-white/90 shadow-sm shadow-slate-950/[0.02] backdrop-blur-2xl">
+      <div className="mx-auto flex min-h-[76px] max-w-[1280px] items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
         <Brand />
 
         <nav
-          className="hidden min-w-0 items-center gap-5 lg:gap-8 md:flex"
+          className="hidden items-center gap-1 md:flex"
           aria-label="Main navigation"
         >
           {links.map((link) => (
             <a
               key={link.href}
               href={link.href}
-              className="whitespace-nowrap text-sm font-semibold text-slate-600 transition hover:text-indigo-600"
+              className="relative rounded-xl px-4 py-2.5 text-sm font-semibold text-slate-600 transition duration-200 hover:bg-indigo-50 hover:text-indigo-700"
             >
               {link.label}
             </a>
           ))}
         </nav>
 
-        <div className="hidden shrink-0 items-center gap-2 lg:gap-3 sm:flex">
-          <a
-            href="#get-started"
-            className="rounded-xl px-3 py-2.5 text-sm font-bold text-slate-700 transition hover:bg-slate-100 lg:px-4"
+        <div className="hidden shrink-0 items-center gap-3 sm:flex">
+          <Link
+            to="/login"
+            className="rounded-xl px-4 py-3 text-sm font-bold text-slate-700 transition hover:bg-slate-100 hover:text-indigo-700"
           >
             Sign in
-          </a>
-          <a
-            href="#get-started"
-            className="rounded-xl bg-indigo-600 px-3 py-2.5 text-sm font-bold text-white shadow-lg shadow-indigo-600/20 transition hover:bg-indigo-700 lg:px-5"
+          </Link>
+
+          <Link
+            to="/register"
+            className="inline-flex items-center justify-center gap-2 rounded-xl bg-indigo-600 px-5 py-3 text-sm font-bold text-white shadow-lg shadow-indigo-600/20 transition duration-200 hover:-translate-y-0.5 hover:bg-indigo-700 hover:shadow-indigo-600/30"
           >
-            Get Started <span aria-hidden="true">→</span>
-          </a>
+            Get Started
+            <span aria-hidden="true">→</span>
+          </Link>
         </div>
 
         <button
           type="button"
-          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-slate-200 text-xl text-slate-800 transition hover:bg-slate-50 sm:h-11 sm:w-11 md:hidden"
+          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-white text-xl text-slate-800 transition hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700 sm:hidden"
           aria-label={menuOpen ? "Close navigation menu" : "Open navigation menu"}
           aria-expanded={menuOpen}
+          aria-controls="mobile-navigation"
           onClick={() => setMenuOpen((open) => !open)}
         >
           {menuOpen ? "✕" : "☰"}
@@ -108,7 +114,8 @@ function Header() {
 
       {menuOpen && (
         <nav
-          className="border-t border-slate-100 bg-white px-4 py-4 shadow-lg sm:px-6 md:hidden"
+          id="mobile-navigation"
+          className="border-t border-slate-100 bg-white px-4 py-4 shadow-xl sm:hidden"
           aria-label="Mobile navigation"
         >
           <div className="mx-auto flex max-w-[1280px] flex-col gap-1">
@@ -116,28 +123,29 @@ function Header() {
               <a
                 key={link.href}
                 href={link.href}
-                onClick={() => setMenuOpen(false)}
+                onClick={closeMenu}
                 className="rounded-xl px-4 py-3 font-semibold text-slate-700 transition hover:bg-indigo-50 hover:text-indigo-700"
               >
                 {link.label}
               </a>
             ))}
 
-            <div className="mt-2 grid grid-cols-2 gap-3 border-t border-slate-100 pt-4 sm:hidden">
-              <a
-                href="#get-started"
-                onClick={() => setMenuOpen(false)}
-                className="flex min-w-0 items-center justify-center rounded-xl border border-slate-200 px-2 py-3 text-center text-sm font-bold text-slate-700"
+            <div className="mt-3 grid grid-cols-2 gap-3 border-t border-slate-100 pt-4">
+              <Link
+                to="/login"
+                onClick={closeMenu}
+                className="flex items-center justify-center rounded-xl border border-slate-200 px-3 py-3 text-sm font-bold text-slate-700 transition hover:border-indigo-200 hover:bg-indigo-50"
               >
                 Sign in
-              </a>
-              <a
-                href="#get-started"
-                onClick={() => setMenuOpen(false)}
-                className="flex min-w-0 items-center justify-center rounded-xl bg-indigo-600 px-2 py-3 text-center text-sm font-bold text-white"
+              </Link>
+
+              <Link
+                to="/register"
+                onClick={closeMenu}
+                className="flex items-center justify-center gap-1 rounded-xl bg-indigo-600 px-3 py-3 text-sm font-bold text-white transition hover:bg-indigo-700"
               >
-                Get Started
-              </a>
+                Get Started <span aria-hidden="true">→</span>
+              </Link>
             </div>
           </div>
         </nav>
@@ -176,16 +184,14 @@ function Hero() {
             for your next big opportunity—all in one learning platform.
           </p>
 
-          <div
-            id="get-started"
-            className="mt-7 flex min-w-0 flex-col gap-3 sm:mt-9 sm:flex-row sm:flex-wrap sm:items-center"
-          >
-            <a
-              href="#learning"
+          <div className="mt-7 flex min-w-0 flex-col gap-3 sm:mt-9 sm:flex-row sm:flex-wrap sm:items-center">
+            <Link
+              to="/courses"
               className="inline-flex min-h-13 w-full min-w-0 items-center justify-center gap-2 rounded-xl bg-indigo-600 px-5 py-3.5 text-center font-bold text-white shadow-xl shadow-indigo-600/20 transition hover:-translate-y-0.5 hover:bg-indigo-700 sm:w-auto sm:px-7"
             >
               Explore Learning <span aria-hidden="true">→</span>
-            </a>
+            </Link>
+
             <a
               href="#features"
               className="inline-flex min-h-13 w-full min-w-0 items-center justify-center rounded-xl border border-slate-200 bg-white px-5 py-3.5 text-center font-bold text-slate-700 transition hover:border-indigo-200 hover:bg-indigo-50 sm:w-auto sm:px-7"
@@ -390,15 +396,20 @@ function Learning() {
               foundation for what comes next.
             </p>
           </div>
-          <span className="break-words text-sm font-semibold text-slate-500">
-            A place to begin. A path to grow.
-          </span>
+
+          <Link
+            to="/courses"
+            className="inline-flex min-h-11 items-center justify-center gap-2 self-start rounded-xl border border-indigo-200 bg-indigo-50 px-4 py-3 text-sm font-bold text-indigo-700 transition hover:bg-indigo-100 md:self-auto"
+          >
+            Browse all courses <span aria-hidden="true">→</span>
+          </Link>
         </div>
 
         <div className="mt-8 grid grid-cols-1 gap-3 sm:mt-10 sm:grid-cols-2 sm:gap-4 lg:grid-cols-3">
           {learningTopics.map((topic, index) => (
-            <article
+            <Link
               key={topic.name}
+              to={`/courses?category=${encodeURIComponent(topic.name)}`}
               className="flex min-w-0 items-center gap-3 rounded-2xl border border-slate-200 bg-white p-4 transition hover:border-indigo-200 hover:shadow-lg sm:gap-4 sm:p-6"
             >
               <div
@@ -421,7 +432,7 @@ function Learning() {
                 </p>
               </div>
               <span className="shrink-0 text-lg text-indigo-500">↗</span>
-            </article>
+            </Link>
           ))}
         </div>
       </div>
@@ -433,43 +444,130 @@ function About() {
   return (
     <section
       id="about"
-      className="bg-slate-950 py-14 text-white sm:py-20 lg:py-24"
+      className="relative isolate overflow-hidden bg-gradient-to-br from-sky-50 via-indigo-50 to-violet-100 py-14 sm:py-20 lg:py-24"
     >
+      <div className="pointer-events-none absolute -right-20 -top-24 -z-10 h-72 w-72 rounded-full bg-indigo-200/40 blur-3xl" />
+      <div className="pointer-events-none absolute -bottom-24 -left-20 -z-10 h-72 w-72 rounded-full bg-violet-200/40 blur-3xl" />
+
       <div className="mx-auto grid min-w-0 max-w-[1280px] items-center gap-7 px-4 sm:gap-8 sm:px-6 md:grid-cols-[minmax(0,1fr)_auto] lg:px-8">
         <div className="min-w-0">
-          <span className="text-xs font-extrabold uppercase tracking-[0.16em] text-indigo-300 sm:text-sm sm:tracking-[0.2em]">
+          <span className="inline-flex rounded-full border border-indigo-200 bg-white/70 px-3 py-1.5 text-xs font-extrabold uppercase tracking-[0.16em] text-indigo-700 shadow-sm sm:text-sm sm:tracking-[0.2em]">
             Learn with purpose
           </span>
-          <h2 className="mt-4 max-w-2xl break-words text-3xl font-black leading-tight tracking-tight sm:text-4xl md:text-5xl">
+
+          <h2 className="mt-5 max-w-2xl break-words text-3xl font-black leading-tight tracking-tight text-slate-950 sm:text-4xl md:text-5xl">
             Your potential deserves a better platform.
           </h2>
-          <p className="mt-5 max-w-2xl break-words leading-7 text-slate-300 sm:text-lg sm:leading-8">
+
+          <p className="mt-5 max-w-2xl break-words leading-7 text-slate-600 sm:text-lg sm:leading-8">
             Nexora brings learning and online assessment together in one
             organized experience—so you can focus on becoming better every day.
           </p>
         </div>
-        <a
-          href="#get-started"
-          className="inline-flex min-h-12 max-w-full items-center justify-center gap-2 justify-self-start rounded-xl bg-white px-5 py-3 text-center font-bold text-slate-950 transition hover:bg-indigo-50 sm:px-6 md:justify-self-end"
+
+        <Link
+          to="/courses"
+          className="inline-flex min-h-13 max-w-full items-center justify-center gap-2 justify-self-start rounded-xl bg-indigo-600 px-7 py-3.5 text-center font-bold text-white shadow-lg shadow-indigo-600/25 transition duration-200 hover:-translate-y-1 hover:bg-indigo-700 hover:shadow-xl hover:shadow-indigo-600/30 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-indigo-300 md:justify-self-end"
         >
           Start Exploring <span aria-hidden="true">→</span>
-        </a>
+        </Link>
       </div>
     </section>
   );
 }
 
 function Footer() {
+  const footerGroups = [
+    {
+      title: "Explore",
+      links: [
+        { label: "Home", href: "/#home" },
+        { label: "Features", href: "/#features" },
+        { label: "Learning", href: "/#learning" },
+        { label: "About Nexora", href: "/#about" },
+      ],
+    },
+    {
+      title: "Learning",
+      links: [
+        { label: "Browse Courses", href: "/courses" },
+        { label: "Student Dashboard", href: "/dashboard" },
+        { label: "My Learning", href: "/dashboard" },
+      ],
+    },
+    {
+      title: "Your Account",
+      links: [
+        { label: "Sign In", href: "/login" },
+        { label: "Create Account", href: "/register" },
+      ],
+    },
+  ];
+
   return (
-    <footer className="border-t border-slate-800 bg-slate-950 text-slate-400">
-      <div className="mx-auto flex min-w-0 max-w-[1280px] flex-col gap-4 px-4 py-7 sm:gap-5 sm:px-6 sm:py-8 md:flex-row md:items-center md:justify-between lg:px-8">
-        <Brand light />
-        <p className="break-words text-sm">
-          Learn smarter. Achieve more.
-        </p>
-        <p className="break-words text-xs sm:text-sm">
-          © {new Date().getFullYear()} Nexora. Built for lifelong learning.
-        </p>
+    <footer className="relative overflow-hidden bg-slate-950 text-slate-300">
+      <div className="pointer-events-none absolute -right-24 -top-32 h-80 w-80 rounded-full bg-indigo-600/10 blur-3xl" />
+      <div className="pointer-events-none absolute -bottom-32 -left-24 h-80 w-80 rounded-full bg-violet-600/10 blur-3xl" />
+
+      <div className="relative mx-auto max-w-[1280px] px-4 sm:px-6 lg:px-8">
+        <div className="grid gap-10 py-12 sm:py-16 md:grid-cols-2 lg:grid-cols-[1.5fr_1fr_1fr_1fr] lg:gap-12">
+          <div className="min-w-0">
+            <Brand light />
+
+            <p className="mt-5 max-w-sm text-sm leading-7 text-slate-400">
+              A smarter way to learn, practice your skills, and track your
+              progress—all in one place.
+            </p>
+
+            <Link
+              to="/courses"
+              className="mt-6 inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.05] px-4 py-3 text-sm font-bold text-white transition hover:border-indigo-400/50 hover:bg-indigo-500/10"
+            >
+              Explore courses <span aria-hidden="true">→</span>
+            </Link>
+          </div>
+
+          {footerGroups.map((group) => (
+            <div key={group.title} className="min-w-0">
+              <h3 className="text-sm font-extrabold uppercase tracking-[0.14em] text-white">
+                {group.title}
+              </h3>
+
+              <ul className="mt-5 space-y-3">
+                {group.links.map((link) => (
+                  <li key={`${group.title}-${link.label}`}>
+                    {link.href.startsWith("/#") ? (
+                      <a
+                        href={link.href}
+                        className="inline-flex text-sm text-slate-400 transition hover:translate-x-1 hover:text-indigo-300"
+                      >
+                        {link.label}
+                      </a>
+                    ) : (
+                      <Link
+                        to={link.href}
+                        className="inline-flex text-sm text-slate-400 transition hover:translate-x-1 hover:text-indigo-300"
+                      >
+                        {link.label}
+                      </Link>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
+        </div>
+
+        <div className="flex flex-col gap-4 border-t border-white/10 py-6 sm:flex-row sm:items-center sm:justify-between">
+          <p className="text-sm text-slate-400">
+            © {new Date().getFullYear()} Nexora. All rights reserved.
+          </p>
+
+          <p className="flex items-center gap-2 text-sm text-slate-400">
+            <span className="h-2 w-2 rounded-full bg-emerald-400" />
+            Learn smarter. Achieve more.
+          </p>
+        </div>
       </div>
     </footer>
   );
