@@ -6,6 +6,7 @@ import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
 import CourseCatalog from "./pages/CourseCatalog";
 import CourseDetails from "./pages/CourseDetails";
+import StudentLearning from "./pages/StudentLearning";
 import AlertMessage from "./components/auth/AlertMessage";
 
 function LoginRoute() {
@@ -37,6 +38,7 @@ function App() {
       <Route path="/courses" element={<CourseCatalog />} />
       <Route path="/courses/:id" element={<CourseDetails />} />
       <Route path="/dashboard" element={<Dashboard />} />
+      <Route path="/learn/:courseId" element={<StudentLearning />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );

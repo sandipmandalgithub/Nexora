@@ -1,9 +1,10 @@
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8080";
 
-export const API_BASE_URL = "http://localhost:8080/api";
+export const API_BASE_URL = `${API_URL.replace(/\/+$/, "")}/api`;
 
 export function getApiError(error) {
   if (!error.response) {
-    return "Cannot connect to the Nexora server. Make sure the Spring Boot backend is running on port 8080.";
+    return "Cannot connect to the Nexora server. Please check your internet connection or try again later.";
   }
 
   const data = error.response.data;

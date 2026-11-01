@@ -1,4 +1,3 @@
-
 package com.nexora.nexora_backend.repository;
 
 import java.util.List;
@@ -14,18 +13,23 @@ public interface EnrollmentRepository
         extends JpaRepository<Enrollment, Long> {
 
     boolean existsByStudent_IdAndCourse_Id(
-        Long studentId,
-        Long courseId
+            Long studentId,
+            Long courseId
+    );
+
+    boolean existsByStudent_EmailAndCourse_Id(
+            String email,
+            Long courseId
     );
 
     List<Enrollment> findByStudent_EmailOrderByCreatedAtDesc(
-        String email
+            String email
     );
 
     List<Enrollment> findAllByOrderByCreatedAtDesc();
 
     Optional<Enrollment> findByIdAndStudent_Email(
-        Long id,
-        String email
+            Long id,
+            String email
     );
 }

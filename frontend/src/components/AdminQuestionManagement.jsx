@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import axios from "axios";
+import { API_BASE_URL } from "../utils/api";
 
-const API_BASE_URL = "http://localhost:8080/api";
 const QUESTIONS_PER_PAGE = 10;
 
 const EMPTY_FORM = {

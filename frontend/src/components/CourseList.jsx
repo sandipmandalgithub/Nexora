@@ -1,8 +1,7 @@
 
 import { useEffect, useState } from "react";
 import axios from "axios";
-
-const API_BASE_URL = "http://localhost:8080/api";
+import { API_BASE_URL } from "../utils/api";
 
 function CourseList() {
   const [courses, setCourses] = useState([]);

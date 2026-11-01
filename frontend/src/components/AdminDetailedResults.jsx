@@ -1,7 +1,6 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-
-const API_URL = "http://localhost:8080/api";
+import { API_BASE_URL } from "../utils/api";
 
 function getToken() {
   return localStorage.getItem("nexoraToken");
@@ -14,7 +13,7 @@ async function apiRequest(path, options = {}) {
     throw new Error("Your session has expired. Please sign in again.");
   }
 
-  const response = await fetch(`${API_URL}${path}`, {
+  const response = await fetch(`${API_BASE_URL}${path}`, {
     ...options,
     headers: {
       Authorization: `Bearer ${token}`,

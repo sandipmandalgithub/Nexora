@@ -794,11 +794,20 @@ function StudentDashboard({ user }) {
                 Enrolled: {String(item.enrolledAt).slice(0, 10)}
               </p>
             )}
+
+            <Link
+              to={`/learn/${item.courseId}`}
+              className="mt-5 flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 py-3 text-sm font-bold text-white transition hover:bg-indigo-700"
+            >
+              Continue Learning
+              <span aria-hidden="true">→</span>
+            </Link>
           </article>
         ))}
       </div>
     );
   }
+
 
   function renderExams(limit) {
     const list =
