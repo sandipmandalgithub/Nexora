@@ -1,7 +1,10 @@
+
 package com.nexora.nexora_backend.service;
 
 import com.nexora.nexora_backend.dto.CourseProgressResponse;
 import com.nexora.nexora_backend.dto.LessonProgressRequest;
+import com.nexora.nexora_backend.entity.Enrollment;
+import com.nexora.nexora_backend.entity.Enrollment.EnrollmentStatus;
 import com.nexora.nexora_backend.entity.Lesson;
 import com.nexora.nexora_backend.entity.LessonProgress;
 import com.nexora.nexora_backend.entity.User;
@@ -111,7 +114,11 @@ public class LessonProgressService {
                 completed ? LocalDateTime.now() : null
         );
 
-        return progressRepository.save(progress);
+        LessonProgress savedProgress = progressRepository.save(progress);
+
+        updateCourseCompletion(email, courseId);
+
+        return savedProgress;
     }
 
     @Transactional(readOnly = true)
@@ -127,7 +134,7 @@ public class LessonProgressService {
                 .orElse(false);
     }
 
-    @Transactional(readOnly = true)
+    @Transactional
     public CourseProgressResponse getCourseProgress(
             Long courseId,
             String email
@@ -143,6 +150,13 @@ public class LessonProgressService {
                         courseId
                 );
 
+        updateEnrollmentStatus(
+                email,
+                courseId,
+                totalLessons,
+                completedLessons
+        );
+
         double percentage = totalLessons == 0
                 ? 0.0
                 : Math.round(
@@ -155,6 +169,60 @@ public class LessonProgressService {
                 completedLessons,
                 percentage
         );
+    }
+
+    private void updateCourseCompletion(
+            String email,
+            Long courseId
+    ) {
+        long totalLessons = lessonRepository
+                .countByModule_Course_Id(courseId);
+
+        long completedLessons = progressRepository
+                .countByStudent_EmailAndLesson_Module_Course_IdAndCompletedTrue(
+                        email,
+                        courseId
+                );
+
+        updateEnrollmentStatus(
+                email,
+                courseId,
+                totalLessons,
+                completedLessons
+        );
+    }
+
+    private void updateEnrollmentStatus(
+            String email,
+            Long courseId,
+            long totalLessons,
+            long completedLessons
+    ) {
+        Enrollment enrollment = enrollmentRepository
+                .findByStudent_EmailAndCourse_Id(email, courseId)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "Enrollment not found"
+                ));
+
+        boolean courseCompleted =
+                totalLessons > 0 && completedLessons >= totalLessons;
+
+        if (courseCompleted) {
+            if (enrollment.getStatus() != EnrollmentStatus.COMPLETED) {
+                enrollment.setStatus(EnrollmentStatus.COMPLETED);
+                enrollment.setCompletedAt(LocalDateTime.now());
+
+                enrollmentRepository.save(enrollment);
+            }
+        } else {
+            if (enrollment.getStatus() != EnrollmentStatus.ENROLLED) {
+                enrollment.setStatus(EnrollmentStatus.ENROLLED);
+                enrollment.setCompletedAt(null);
+
+                enrollmentRepository.save(enrollment);
+            }
+        }
     }
 
     @Transactional

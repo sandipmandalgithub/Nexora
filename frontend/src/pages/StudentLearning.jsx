@@ -21,7 +21,9 @@ function getYouTubeEmbedUrl(url) {
 
     if (hostname === "youtu.be") {
       const videoId = parsedUrl.pathname.slice(1);
-      return videoId ? `https://www.youtube.com/embed/${videoId}` : null;
+      return videoId
+        ? `https://www.youtube.com/embed/${videoId}`
+        : null;
     }
 
     if (
@@ -69,14 +71,23 @@ function StudentLearning() {
   const [error, setError] = useState("");
   const [expandedModules, setExpandedModules] = useState({});
 
+  const [completedLessons, setCompletedLessons] = useState({});
+  const [progressLoading, setProgressLoading] = useState(false);
+  const [progressError, setProgressError] = useState("");
+  const [progressSuccess, setProgressSuccess] = useState("");
+
+  const role = String(user?.role || "").toUpperCase();
+  const isStudent = role === "STUDENT";
+
   const apiRequest = useCallback(
-    async (endpoint) => {
+    async (endpoint, method = "GET", body = null) => {
       const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-        method: "GET",
+        method,
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
         },
+        ...(body !== null ? { body: JSON.stringify(body) } : {}),
       });
 
       if (!response.ok) {
@@ -94,7 +105,12 @@ function StudentLearning() {
         throw requestError;
       }
 
-      return response.json();
+      if (response.status === 204) {
+        return null;
+      }
+
+      const responseText = await response.text();
+      return responseText ? JSON.parse(responseText) : null;
     },
     [token]
   );
@@ -105,12 +121,10 @@ function StudentLearning() {
       return;
     }
 
-    const role = String(user.role || "").toUpperCase();
-
     if (role !== "STUDENT" && role !== "ADMIN") {
       navigate("/dashboard", { replace: true });
     }
-  }, [token, user, navigate]);
+  }, [token, user, role, navigate]);
 
   useEffect(() => {
     let isActive = true;
@@ -120,6 +134,9 @@ function StudentLearning() {
 
       setLoading(true);
       setError("");
+      setProgressError("");
+      setProgressSuccess("");
+      setCompletedLessons({});
 
       try {
         const [courseData, moduleData] = await Promise.all([
@@ -158,6 +175,45 @@ function StudentLearning() {
         } else {
           setSelectedLessonId(null);
         }
+
+        // Load saved lesson completion status for students.
+        if (isStudent) {
+          const lessons = modulesWithLessons.flatMap(
+            (module) => module.lessons
+          );
+
+          const progressResults = await Promise.all(
+            lessons.map(async (lesson) => {
+              try {
+                const progress = await apiRequest(
+                  `/lessons/${lesson.id}/progress`
+                );
+
+                return {
+                  lessonId: String(lesson.id),
+                  completed: Boolean(
+                    progress?.completed ?? progress?.isCompleted
+                  ),
+                };
+              } catch {
+                return {
+                  lessonId: String(lesson.id),
+                  completed: false,
+                };
+              }
+            })
+          );
+
+          if (!isActive) return;
+
+          const progressMap = {};
+
+          progressResults.forEach((item) => {
+            progressMap[item.lessonId] = item.completed;
+          });
+
+          setCompletedLessons(progressMap);
+        }
       } catch (requestError) {
         if (!isActive) return;
 
@@ -189,7 +245,7 @@ function StudentLearning() {
     return () => {
       isActive = false;
     };
-  }, [courseId, token, user, apiRequest, navigate]);
+  }, [courseId, token, user, isStudent, apiRequest, navigate]);
 
   const allLessons = useMemo(() => {
     return modules.flatMap((module) =>
@@ -202,13 +258,26 @@ function StudentLearning() {
   }, [modules]);
 
   const selectedLessonIndex = allLessons.findIndex(
-    (lesson) => lesson.id === selectedLessonId
+    (lesson) => String(lesson.id) === String(selectedLessonId)
   );
 
   const selectedLesson =
     selectedLessonIndex >= 0 ? allLessons[selectedLessonIndex] : null;
 
-  const completedNavigationCount = allLessons.length;
+  const completedCount = allLessons.filter(
+    (lesson) => completedLessons[String(lesson.id)]
+  ).length;
+
+  const totalLessons = allLessons.length;
+
+  const progressPercentage =
+    totalLessons > 0
+      ? Math.round((completedCount / totalLessons) * 100)
+      : 0;
+
+  const isSelectedLessonCompleted = selectedLesson
+    ? Boolean(completedLessons[String(selectedLesson.id)])
+    : false;
 
   function toggleModule(moduleId) {
     setExpandedModules((previous) => ({
@@ -219,6 +288,8 @@ function StudentLearning() {
 
   function selectLesson(lessonId, moduleId) {
     setSelectedLessonId(lessonId);
+    setProgressError("");
+    setProgressSuccess("");
 
     setExpandedModules((previous) => ({
       ...previous,
@@ -229,12 +300,58 @@ function StudentLearning() {
   function goToPreviousLesson() {
     if (selectedLessonIndex > 0) {
       setSelectedLessonId(allLessons[selectedLessonIndex - 1].id);
+      setProgressError("");
+      setProgressSuccess("");
     }
   }
 
   function goToNextLesson() {
     if (selectedLessonIndex < allLessons.length - 1) {
       setSelectedLessonId(allLessons[selectedLessonIndex + 1].id);
+      setProgressError("");
+      setProgressSuccess("");
+    }
+  }
+
+  async function markLessonComplete() {
+    if (!selectedLesson || !isStudent || progressLoading) return;
+
+    const lessonId = selectedLesson.id;
+
+    setProgressLoading(true);
+    setProgressError("");
+    setProgressSuccess("");
+
+    try {
+      const response = await apiRequest(
+        `/lessons/${lessonId}/progress`,
+        "PUT",
+        { completed: true }
+      );
+
+      const savedAsCompleted = Boolean(
+        response?.completed ?? response?.isCompleted ?? true
+      );
+
+      setCompletedLessons((previous) => ({
+        ...previous,
+        [String(lessonId)]: savedAsCompleted,
+      }));
+
+      setProgressSuccess(
+        "Lesson completed successfully. Your course progress has been saved."
+      );
+    } catch (requestError) {
+      if (requestError.status === 401) {
+        localStorage.removeItem("nexoraToken");
+        localStorage.removeItem("nexoraUser");
+        navigate("/login", { replace: true });
+        return;
+      }
+
+      setProgressError(requestError.message);
+    } finally {
+      setProgressLoading(false);
     }
   }
 
@@ -306,7 +423,7 @@ function StudentLearning() {
           <div className="hidden shrink-0 text-right sm:block">
             <p className="text-xs text-slate-500">Course Content</p>
             <p className="text-sm font-semibold text-slate-800">
-              {modules.length} Modules · {completedNavigationCount} Lessons
+              {modules.length} Modules · {totalLessons} Lessons
             </p>
           </div>
         </div>
@@ -326,6 +443,30 @@ function StudentLearning() {
             <p className="mt-1 text-sm text-slate-500">
               Select a lesson to start learning.
             </p>
+
+            {isStudent && (
+              <div className="mt-5">
+                <div className="mb-2 flex items-center justify-between text-xs">
+                  <span className="font-semibold text-slate-600">
+                    Course Progress
+                  </span>
+                  <span className="font-bold text-indigo-600">
+                    {progressPercentage}%
+                  </span>
+                </div>
+
+                <div className="h-2 overflow-hidden rounded-full bg-slate-100">
+                  <div
+                    className="h-full rounded-full bg-indigo-600 transition-all"
+                    style={{ width: `${progressPercentage}%` }}
+                  />
+                </div>
+
+                <p className="mt-2 text-xs text-slate-500">
+                  {completedCount} of {totalLessons} lessons completed
+                </p>
+              </div>
+            )}
           </div>
 
           {modules.length === 0 ? (
@@ -382,7 +523,11 @@ function StudentLearning() {
                         ) : (
                           module.lessons.map((lesson, lessonIndex) => {
                             const isSelected =
-                              lesson.id === selectedLessonId;
+                              String(lesson.id) === String(selectedLessonId);
+
+                            const isCompleted = Boolean(
+                              completedLessons[String(lesson.id)]
+                            );
 
                             return (
                               <button
@@ -399,12 +544,14 @@ function StudentLearning() {
                               >
                                 <span
                                   className={`mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-semibold ${
-                                    isSelected
-                                      ? "bg-indigo-600 text-white"
-                                      : "bg-slate-100 text-slate-600"
+                                    isCompleted
+                                      ? "bg-green-100 text-green-700"
+                                      : isSelected
+                                        ? "bg-indigo-600 text-white"
+                                        : "bg-slate-100 text-slate-600"
                                   }`}
                                 >
-                                  {lessonIndex + 1}
+                                  {isCompleted ? "✓" : lessonIndex + 1}
                                 </span>
 
                                 <span className="min-w-0 flex-1">
@@ -415,6 +562,12 @@ function StudentLearning() {
                                   {lesson.duration > 0 && (
                                     <span className="mt-1 block text-xs text-slate-500">
                                       {lesson.duration} minutes
+                                    </span>
+                                  )}
+
+                                  {isCompleted && (
+                                    <span className="mt-1 block text-xs font-semibold text-green-600">
+                                      Completed
                                     </span>
                                   )}
                                 </span>
@@ -510,6 +663,57 @@ function StudentLearning() {
                   </p>
                 )}
               </section>
+
+              {isStudent && (
+                <section className="mt-6 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+                  <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                      <h3 className="font-bold text-slate-900">
+                        Lesson Completion
+                      </h3>
+
+                      <p className="mt-1 text-sm text-slate-500">
+                        Mark this lesson as complete after finishing the content.
+                      </p>
+                    </div>
+
+                    {isSelectedLessonCompleted ? (
+                      <span className="inline-flex items-center justify-center rounded-xl bg-green-50 px-5 py-3 text-sm font-semibold text-green-700">
+                        ✓ Lesson Completed
+                      </span>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={markLessonComplete}
+                        disabled={progressLoading}
+                        className="rounded-xl bg-indigo-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        {progressLoading
+                          ? "Saving Progress..."
+                          : "Mark as Complete"}
+                      </button>
+                    )}
+                  </div>
+
+                  {progressError && (
+                    <p className="mt-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                      {progressError}
+                    </p>
+                  )}
+
+                  {progressSuccess && (
+                    <p className="mt-4 rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700">
+                      {progressSuccess}
+                    </p>
+                  )}
+
+                  {completedCount === totalLessons && totalLessons > 0 && (
+                    <p className="mt-4 rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm font-medium text-green-700">
+                      Congratulations! You have completed all lessons in this course.
+                    </p>
+                  )}
+                </section>
+              )}
 
               <div className="mt-7 flex flex-col-reverse justify-between gap-3 sm:flex-row">
                 <button

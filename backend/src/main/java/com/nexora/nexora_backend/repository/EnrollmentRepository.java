@@ -1,3 +1,4 @@
+
 package com.nexora.nexora_backend.repository;
 
 import java.util.List;
@@ -18,6 +19,11 @@ public interface EnrollmentRepository
     );
 
     boolean existsByStudent_EmailAndCourse_Id(
+            String email,
+            Long courseId
+    );
+
+    Optional<Enrollment> findByStudent_EmailAndCourse_Id(
             String email,
             Long courseId
     );

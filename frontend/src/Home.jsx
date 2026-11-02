@@ -1,5 +1,8 @@
-import { useState } from "react";
-import { Link } from "react-router-dom";
+
+import { useEffect, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import axios from "axios";
+import { API_BASE_URL } from "./utils/api";
 
 const features = [
   {
@@ -379,6 +382,240 @@ function Features() {
   );
 }
 
+function FeaturedCourses() {
+  const navigate = useNavigate();
+  const [courses, setCourses] = useState([]);
+  const [enrolledCourseIds, setEnrolledCourseIds] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [enrollingCourseId, setEnrollingCourseId] = useState(null);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
+
+  useEffect(() => {
+    let isMounted = true;
+
+    async function fetchData() {
+      const token = localStorage.getItem("nexoraToken");
+      const headers = token
+        ? { Authorization: `Bearer ${token}` }
+        : {};
+
+      try {
+        const courseResponse = await axios.get(`${API_BASE_URL}/courses`, {
+          headers,
+        });
+
+        if (!isMounted) return;
+
+        const publishedCourses = Array.isArray(courseResponse.data)
+          ? courseResponse.data.filter((course) => course.published)
+          : [];
+
+        setCourses(publishedCourses);
+
+        if (token) {
+          try {
+            const enrollmentResponse = await axios.get(
+              `${API_BASE_URL}/enrollments/my`,
+              { headers }
+            );
+
+            if (isMounted) {
+              const ids = Array.isArray(enrollmentResponse.data)
+                ? enrollmentResponse.data.map((item) => item.courseId)
+                : [];
+
+              setEnrolledCourseIds(ids);
+            }
+          } catch {
+            // Course browsing remains available if enrollment lookup fails.
+          }
+        }
+      } catch (requestError) {
+        if (isMounted) {
+          setError(
+            requestError.response?.status === 401
+              ? "Please sign in to view available courses."
+              : "Unable to load courses right now. Please try again later."
+          );
+        }
+      } finally {
+        if (isMounted) {
+          setLoading(false);
+        }
+      }
+    }
+
+    fetchData();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  async function handleEnroll(courseId) {
+    const token = localStorage.getItem("nexoraToken");
+
+    if (!token) {
+      navigate("/login");
+      return;
+    }
+
+    setError("");
+    setSuccess("");
+    setEnrollingCourseId(courseId);
+
+    try {
+      await axios.post(
+        `${API_BASE_URL}/enrollments/${courseId}`,
+        {},
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      setEnrolledCourseIds((previous) =>
+        previous.includes(courseId) ? previous : [...previous, courseId]
+      );
+
+      setSuccess("You have successfully enrolled in this course.");
+    } catch (requestError) {
+      if (requestError.response?.status === 401) {
+        setError("Your session has expired. Please sign in again.");
+      } else if (requestError.response?.status === 403) {
+        setError("Only student accounts can enroll in courses.");
+      } else if (requestError.response?.status === 409) {
+        setEnrolledCourseIds((previous) =>
+          previous.includes(courseId) ? previous : [...previous, courseId]
+        );
+        setSuccess("You are already enrolled in this course.");
+      } else {
+        setError(
+          requestError.response?.data?.message ||
+            "Unable to enroll in this course. Please try again."
+        );
+      }
+    } finally {
+      setEnrollingCourseId(null);
+    }
+  }
+
+  return (
+    <div className="mt-12 sm:mt-16">
+      <div className="flex min-w-0 flex-col justify-between gap-4 sm:flex-row sm:items-end">
+        <div className="min-w-0">
+          <span className="text-xs font-extrabold uppercase tracking-[0.16em] text-indigo-600 sm:text-sm sm:tracking-[0.2em]">
+            Start learning
+          </span>
+          <h3 className="mt-3 break-words text-2xl font-black tracking-tight text-slate-950 sm:text-3xl">
+            Explore available courses.
+          </h3>
+          <p className="mt-3 max-w-2xl break-words leading-7 text-slate-600">
+            Discover published courses and enroll to start your learning
+            journey.
+          </p>
+        </div>
+
+        <Link
+          to="/courses"
+          className="inline-flex min-h-11 items-center justify-center gap-2 self-start rounded-xl border border-indigo-200 bg-indigo-50 px-4 py-3 text-sm font-bold text-indigo-700 transition hover:bg-indigo-100 sm:self-auto"
+        >
+          Browse all courses <span aria-hidden="true">→</span>
+        </Link>
+      </div>
+
+      {error && (
+        <div
+          className="mt-5 rounded-xl border border-red-200 bg-red-50 p-4 text-sm leading-6 text-red-700"
+          role="alert"
+        >
+          {error}
+        </div>
+      )}
+
+      {success && (
+        <div
+          className="mt-5 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm leading-6 text-emerald-700"
+          role="status"
+        >
+          {success}
+        </div>
+      )}
+
+      {loading && (
+        <p className="mt-6 text-sm text-slate-500" role="status">
+          Loading available courses...
+        </p>
+      )}
+
+      {!loading && !error && courses.length === 0 && (
+        <div className="mt-6 rounded-2xl border border-slate-200 bg-slate-50 p-6 text-sm leading-7 text-slate-600">
+          No published courses are available yet. Please check again later.
+        </div>
+      )}
+
+      {!loading && courses.length > 0 && (
+        <div className="mt-7 grid min-w-0 grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {courses.map((course) => {
+            const isEnrolled = enrolledCourseIds.includes(course.id);
+            const isEnrolling = enrollingCourseId === course.id;
+
+            return (
+              <article
+                key={course.id}
+                className="flex min-w-0 flex-col rounded-2xl border border-slate-200 bg-white p-5 transition duration-300 hover:-translate-y-1 hover:border-indigo-200 hover:shadow-xl hover:shadow-indigo-950/5"
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <span className="max-w-full break-words rounded-full bg-indigo-50 px-3 py-1 text-xs font-bold text-indigo-700">
+                    {course.category || "General"}
+                  </span>
+
+                  <span className="shrink-0 rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700">
+                    Published
+                  </span>
+                </div>
+
+                <h4 className="mt-4 break-words text-lg font-extrabold leading-7 text-slate-900">
+                  {course.title}
+                </h4>
+
+                <p className="mt-2 flex-1 break-words text-sm leading-6 text-slate-600">
+                  {course.description || "Course description coming soon."}
+                </p>
+
+                <p className="mt-4 break-words text-sm text-slate-500">
+                  Instructor: {course.instructorName || "Nexora Team"}
+                </p>
+
+                {isEnrolled ? (
+                  <Link
+                    to="/dashboard"
+                    className="mt-5 inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-3 text-sm font-bold text-white transition hover:bg-emerald-700"
+                  >
+                    View My Courses <span aria-hidden="true">→</span>
+                  </Link>
+                ) : (
+                  <button
+                    type="button"
+                    disabled={isEnrolling}
+                    onClick={() => handleEnroll(course.id)}
+                    className="mt-5 inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 py-3 text-sm font-bold text-white shadow-lg shadow-indigo-600/15 transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {isEnrolling ? "Enrolling..." : "Enroll Now"}
+                    {!isEnrolling && <span aria-hidden="true">→</span>}
+                  </button>
+                )}
+              </article>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function Learning() {
   return (
     <section id="learning" className="bg-white py-14 sm:py-24 lg:py-28">
@@ -435,6 +672,8 @@ function Learning() {
             </Link>
           ))}
         </div>
+
+        <FeaturedCourses />
       </div>
     </section>
   );

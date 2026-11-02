@@ -11,13 +11,28 @@ const EMPTY_FORM = {
   published: true,
 };
 
+const EMPTY_MODULE_FORM = {
+  title: "",
+  description: "",
+  orderIndex: 0,
+};
+
+const EMPTY_LESSON_FORM = {
+  title: "",
+  description: "",
+  videoUrl: "",
+  content: "",
+  duration: 0,
+  orderIndex: 0,
+};
+
 function getErrorMessage(error) {
   if (error.response?.status === 401) {
     return "Your session may have expired. Please sign in again.";
   }
 
   if (error.response?.status === 403) {
-    return "You do not have permission to manage courses.";
+    return "You do not have permission to perform this action.";
   }
 
   if (!error.response) {
@@ -75,6 +90,24 @@ function AdminCourseManagement() {
   const [selectedCourse, setSelectedCourse] = useState(null);
   const [detailsLoading, setDetailsLoading] = useState(false);
 
+  // Module management state
+  const [moduleCourse, setModuleCourse] = useState(null);
+  const [modules, setModules] = useState([]);
+  const [moduleForm, setModuleForm] = useState(EMPTY_MODULE_FORM);
+  const [editingModuleId, setEditingModuleId] = useState(null);
+  const [moduleLoading, setModuleLoading] = useState(false);
+  const [moduleSaving, setModuleSaving] = useState(false);
+  const [deletingModuleId, setDeletingModuleId] = useState(null);
+
+  // Lesson management state
+  const [selectedModule, setSelectedModule] = useState(null);
+  const [lessons, setLessons] = useState([]);
+  const [lessonForm, setLessonForm] = useState(EMPTY_LESSON_FORM);
+  const [editingLessonId, setEditingLessonId] = useState(null);
+  const [lessonLoading, setLessonLoading] = useState(false);
+  const [lessonSaving, setLessonSaving] = useState(false);
+  const [deletingLessonId, setDeletingLessonId] = useState(null);
+
   const getAuthConfig = () => {
     const token = localStorage.getItem("nexoraToken");
 
@@ -85,7 +118,7 @@ function AdminCourseManagement() {
     };
   };
 
-  // Fetch courses for refresh and after CRUD operations.
+  // Fetch courses
   const fetchCourses = useCallback(async () => {
     setLoading(true);
 
@@ -104,7 +137,6 @@ function AdminCourseManagement() {
     }
   }, []);
 
-  // Initial loading: update React state only after the API promise resolves.
   useEffect(() => {
     let active = true;
 
@@ -165,6 +197,7 @@ function AdminCourseManagement() {
 
   const draftCount = courses.length - publishedCount;
 
+  // Course form handlers
   function handleChange(event) {
     const { name, value, type, checked } = event.target;
 
@@ -324,6 +357,10 @@ function AdminCourseManagement() {
         setSelectedCourse(null);
       }
 
+      if (moduleCourse?.id === course.id) {
+        closeModuleManagement();
+      }
+
       setSuccess("Course deleted successfully.");
 
       await fetchCourses();
@@ -350,6 +387,329 @@ function AdminCourseManagement() {
       setError(getErrorMessage(requestError));
     } finally {
       setDetailsLoading(false);
+    }
+  }
+
+  // ==========================================
+  // MODULE MANAGEMENT
+  // ==========================================
+
+  async function fetchModules(courseId) {
+    setModuleLoading(true);
+
+    try {
+      const response = await axios.get(
+        `${API_BASE_URL}/courses/${courseId}/modules`,
+        getAuthConfig()
+      );
+
+      setModules(Array.isArray(response.data) ? response.data : []);
+      setError("");
+    } catch (requestError) {
+      setModules([]);
+      setError(getErrorMessage(requestError));
+    } finally {
+      setModuleLoading(false);
+    }
+  }
+
+  async function openModuleManagement(course) {
+    setModuleCourse(course);
+    setModules([]);
+    setModuleForm(EMPTY_MODULE_FORM);
+    setEditingModuleId(null);
+    setSelectedModule(null);
+    setLessons([]);
+    setError("");
+    setSuccess("");
+
+    await fetchModules(course.id);
+  }
+
+  function closeModuleManagement() {
+    setModuleCourse(null);
+    setModules([]);
+    setModuleForm(EMPTY_MODULE_FORM);
+    setEditingModuleId(null);
+    setSelectedModule(null);
+    setLessons([]);
+    setLessonForm(EMPTY_LESSON_FORM);
+    setEditingLessonId(null);
+  }
+
+  function handleModuleFormChange(event) {
+    const { name, value } = event.target;
+
+    setModuleForm((previous) => ({
+      ...previous,
+      [name]: value,
+    }));
+  }
+
+  function handleEditModule(module) {
+    setModuleForm({
+      title: module.title || "",
+      description: module.description || "",
+      orderIndex: module.orderIndex ?? 0,
+    });
+
+    setEditingModuleId(module.id);
+  }
+
+  function resetModuleForm() {
+    setModuleForm(EMPTY_MODULE_FORM);
+    setEditingModuleId(null);
+  }
+
+  async function handleModuleSubmit(event) {
+    event.preventDefault();
+
+    if (!moduleCourse) return;
+
+    const payload = {
+      title: moduleForm.title.trim(),
+      description: moduleForm.description.trim(),
+      orderIndex: Number(moduleForm.orderIndex),
+    };
+
+    if (!payload.title) {
+      setError("Module title is required.");
+      return;
+    }
+
+    if (payload.orderIndex < 0 || !Number.isInteger(payload.orderIndex)) {
+      setError("Module order must be a non-negative whole number.");
+      return;
+    }
+
+    setModuleSaving(true);
+    setError("");
+    setSuccess("");
+
+    try {
+      if (editingModuleId !== null) {
+        await axios.put(
+          `${API_BASE_URL}/courses/${moduleCourse.id}/modules/${editingModuleId}`,
+          payload,
+          getAuthConfig()
+        );
+
+        setSuccess("Module updated successfully.");
+      } else {
+        await axios.post(
+          `${API_BASE_URL}/courses/${moduleCourse.id}/modules`,
+          payload,
+          getAuthConfig()
+        );
+
+        setSuccess("Module created successfully.");
+      }
+
+      resetModuleForm();
+      await fetchModules(moduleCourse.id);
+    } catch (requestError) {
+      setError(getErrorMessage(requestError));
+    } finally {
+      setModuleSaving(false);
+    }
+  }
+
+  async function handleDeleteModule(module) {
+    if (!moduleCourse) return;
+
+    const confirmed = window.confirm(
+      `Are you sure you want to delete "${module.title}"? All lessons and their progress inside this module will also be deleted.`
+    );
+
+    if (!confirmed) return;
+
+    setDeletingModuleId(module.id);
+    setError("");
+    setSuccess("");
+
+    try {
+      await axios.delete(
+        `${API_BASE_URL}/courses/${moduleCourse.id}/modules/${module.id}`,
+        getAuthConfig()
+      );
+
+      if (selectedModule?.id === module.id) {
+        setSelectedModule(null);
+        setLessons([]);
+        setLessonForm(EMPTY_LESSON_FORM);
+        setEditingLessonId(null);
+      }
+
+      if (editingModuleId === module.id) {
+        resetModuleForm();
+      }
+
+      setSuccess("Module deleted successfully.");
+      await fetchModules(moduleCourse.id);
+    } catch (requestError) {
+      setError(getErrorMessage(requestError));
+    } finally {
+      setDeletingModuleId(null);
+    }
+  }
+
+  // ==========================================
+  // LESSON MANAGEMENT
+  // ==========================================
+
+  async function fetchLessons(moduleId) {
+    setLessonLoading(true);
+
+    try {
+      const response = await axios.get(
+        `${API_BASE_URL}/modules/${moduleId}/lessons`,
+        getAuthConfig()
+      );
+
+      setLessons(Array.isArray(response.data) ? response.data : []);
+      setError("");
+    } catch (requestError) {
+      setLessons([]);
+      setError(getErrorMessage(requestError));
+    } finally {
+      setLessonLoading(false);
+    }
+  }
+
+  async function handleSelectModule(module) {
+    setSelectedModule(module);
+    setLessons([]);
+    setLessonForm(EMPTY_LESSON_FORM);
+    setEditingLessonId(null);
+    setError("");
+    setSuccess("");
+
+    await fetchLessons(module.id);
+  }
+
+  function handleLessonFormChange(event) {
+    const { name, value } = event.target;
+
+    setLessonForm((previous) => ({
+      ...previous,
+      [name]: value,
+    }));
+  }
+
+  function handleEditLesson(lesson) {
+    setLessonForm({
+      title: lesson.title || "",
+      description: lesson.description || "",
+      videoUrl: lesson.videoUrl || "",
+      content: lesson.content || "",
+      duration: lesson.duration ?? 0,
+      orderIndex: lesson.orderIndex ?? 0,
+    });
+
+    setEditingLessonId(lesson.id);
+  }
+
+  function resetLessonForm() {
+    setLessonForm(EMPTY_LESSON_FORM);
+    setEditingLessonId(null);
+  }
+
+  async function handleLessonSubmit(event) {
+    event.preventDefault();
+
+    if (!selectedModule) return;
+
+    const payload = {
+      title: lessonForm.title.trim(),
+      description: lessonForm.description.trim(),
+      videoUrl: lessonForm.videoUrl.trim(),
+      content: lessonForm.content,
+      duration: Number(lessonForm.duration),
+      orderIndex: Number(lessonForm.orderIndex),
+    };
+
+    if (!payload.title) {
+      setError("Lesson title is required.");
+      return;
+    }
+
+    if (
+      !Number.isInteger(payload.duration) ||
+      payload.duration < 0
+    ) {
+      setError("Duration must be a non-negative whole number.");
+      return;
+    }
+
+    if (
+      !Number.isInteger(payload.orderIndex) ||
+      payload.orderIndex < 0
+    ) {
+      setError("Lesson order must be a non-negative whole number.");
+      return;
+    }
+
+    setLessonSaving(true);
+    setError("");
+    setSuccess("");
+
+    try {
+      if (editingLessonId !== null) {
+        await axios.put(
+          `${API_BASE_URL}/modules/${selectedModule.id}/lessons/${editingLessonId}`,
+          payload,
+          getAuthConfig()
+        );
+
+        setSuccess("Lesson updated successfully.");
+      } else {
+        await axios.post(
+          `${API_BASE_URL}/modules/${selectedModule.id}/lessons`,
+          payload,
+          getAuthConfig()
+        );
+
+        setSuccess("Lesson created successfully.");
+      }
+
+      resetLessonForm();
+      await fetchLessons(selectedModule.id);
+    } catch (requestError) {
+      setError(getErrorMessage(requestError));
+    } finally {
+      setLessonSaving(false);
+    }
+  }
+
+  async function handleDeleteLesson(lesson) {
+    if (!selectedModule) return;
+
+    const confirmed = window.confirm(
+      `Are you sure you want to delete "${lesson.title}"?`
+    );
+
+    if (!confirmed) return;
+
+    setDeletingLessonId(lesson.id);
+    setError("");
+    setSuccess("");
+
+    try {
+      await axios.delete(
+        `${API_BASE_URL}/modules/${selectedModule.id}/lessons/${lesson.id}`,
+        getAuthConfig()
+      );
+
+      if (editingLessonId === lesson.id) {
+        resetLessonForm();
+      }
+
+      setSuccess("Lesson deleted successfully.");
+      await fetchLessons(selectedModule.id);
+    } catch (requestError) {
+      setError(getErrorMessage(requestError));
+    } finally {
+      setDeletingLessonId(null);
     }
   }
 
@@ -414,6 +774,13 @@ function AdminCourseManagement() {
           className="break-words rounded-xl border border-red-200 bg-red-50 p-4 text-sm leading-6 text-red-700"
         >
           {error}
+          <button
+            type="button"
+            onClick={() => setError("")}
+            className="ml-3 font-bold underline"
+          >
+            Dismiss
+          </button>
         </div>
       )}
 
@@ -423,10 +790,17 @@ function AdminCourseManagement() {
           className="break-words rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm leading-6 text-emerald-700"
         >
           {success}
+          <button
+            type="button"
+            onClick={() => setSuccess("")}
+            className="ml-3 font-bold underline"
+          >
+            Dismiss
+          </button>
         </div>
       )}
 
-      {/* Create / Edit Form */}
+      {/* Create / Edit Course Form */}
       <div
         id="admin-course-form"
         className="scroll-mt-5 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6 lg:p-7"
@@ -603,7 +977,6 @@ function AdminCourseManagement() {
           </span>
         </div>
 
-        {/* Search and Filter */}
         <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-[minmax(0,1fr)_190px]">
           <input
             type="search"
@@ -700,7 +1073,7 @@ function AdminCourseManagement() {
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap lg:max-w-72 lg:shrink-0 lg:justify-end">
+                  <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap lg:max-w-80 lg:shrink-0 lg:justify-end">
                     <button
                       type="button"
                       onClick={() => handleViewDetails(course)}
@@ -715,6 +1088,15 @@ function AdminCourseManagement() {
                       className="rounded-lg border border-slate-300 px-3 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
                     >
                       Edit
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => openModuleManagement(course)}
+                      disabled={deletingId === course.id}
+                      className="rounded-lg bg-violet-50 px-3 py-2.5 text-sm font-semibold text-violet-700 transition hover:bg-violet-100 disabled:opacity-60"
+                    >
+                      Manage Modules
                     </button>
 
                     <button
@@ -759,7 +1141,7 @@ function AdminCourseManagement() {
       {/* Course Details Modal */}
       {selectedCourse && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-slate-950/60 p-3 sm:p-6"
+          className="fixed inset-0 z-40 flex items-center justify-center overflow-y-auto bg-slate-950/60 p-3 sm:p-6"
           onMouseDown={(event) => {
             if (event.target === event.currentTarget) {
               setSelectedCourse(null);
@@ -888,6 +1270,583 @@ function AdminCourseManagement() {
                 </div>
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* ==========================================
+          MODULE MANAGEMENT MODAL
+      ========================================== */}
+      {moduleCourse && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-slate-950/70 p-3 sm:p-5"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) {
+              closeModuleManagement();
+            }
+          }}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="module-management-title"
+            className="my-auto max-h-[94vh] w-full max-w-5xl overflow-y-auto rounded-2xl bg-white shadow-2xl"
+          >
+            <div className="sticky top-0 z-10 flex items-start justify-between gap-4 border-b border-slate-200 bg-white p-5 sm:p-6">
+              <div className="min-w-0">
+                <p className="text-xs font-bold uppercase tracking-wider text-violet-600">
+                  Course Curriculum
+                </p>
+
+                <h3
+                  id="module-management-title"
+                  className="mt-1 break-words text-xl font-extrabold text-slate-900"
+                >
+                  Manage Modules
+                </h3>
+
+                <p className="mt-2 break-words text-sm text-slate-500">
+                  {moduleCourse.title} · Course ID: {moduleCourse.id}
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={closeModuleManagement}
+                aria-label="Close module management"
+                className="shrink-0 rounded-lg px-3 py-2 text-xl font-semibold text-slate-500 transition hover:bg-slate-100 hover:text-slate-800"
+              >
+                ×
+              </button>
+            </div>
+
+            <div className="space-y-6 p-4 sm:p-6">
+              {/* Module Form */}
+              <div className="rounded-xl border border-violet-100 bg-violet-50/50 p-4 sm:p-5">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div>
+                    <h4 className="font-bold text-slate-900">
+                      {editingModuleId !== null
+                        ? "Edit Module"
+                        : "Add New Module"}
+                    </h4>
+
+                    <p className="mt-1 text-sm text-slate-500">
+                      Create sections to organize your course topics.
+                    </p>
+                  </div>
+
+                  {editingModuleId !== null && (
+                    <button
+                      type="button"
+                      onClick={resetModuleForm}
+                      className="text-sm font-semibold text-slate-600 underline"
+                    >
+                      Cancel edit
+                    </button>
+                  )}
+                </div>
+
+                <form
+                  onSubmit={handleModuleSubmit}
+                  className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2"
+                >
+                  <div className="sm:col-span-2">
+                    <label
+                      htmlFor="module-title"
+                      className="mb-2 block text-sm font-semibold text-slate-700"
+                    >
+                      Module title *
+                    </label>
+
+                    <input
+                      id="module-title"
+                      name="title"
+                      value={moduleForm.title}
+                      onChange={handleModuleFormChange}
+                      required
+                      maxLength={150}
+                      placeholder="e.g. Introduction to Java"
+                      className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-100"
+                    />
+                  </div>
+
+                  <div>
+                    <label
+                      htmlFor="module-order"
+                      className="mb-2 block text-sm font-semibold text-slate-700"
+                    >
+                      Order index
+                    </label>
+
+                    <input
+                      id="module-order"
+                      name="orderIndex"
+                      type="number"
+                      min="0"
+                      step="1"
+                      value={moduleForm.orderIndex}
+                      onChange={handleModuleFormChange}
+                      className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-100"
+                    />
+                  </div>
+
+                  <div className="sm:col-span-2">
+                    <label
+                      htmlFor="module-description"
+                      className="mb-2 block text-sm font-semibold text-slate-700"
+                    >
+                      Description
+                    </label>
+
+                    <textarea
+                      id="module-description"
+                      name="description"
+                      value={moduleForm.description}
+                      onChange={handleModuleFormChange}
+                      rows={3}
+                      maxLength={2000}
+                      placeholder="Describe what students will learn in this module..."
+                      className="w-full resize-y rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-100"
+                    />
+                  </div>
+
+                  <div className="sm:col-span-2">
+                    <button
+                      type="submit"
+                      disabled={moduleSaving}
+                      className="w-full rounded-xl bg-violet-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-violet-700 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
+                    >
+                      {moduleSaving
+                        ? "Saving..."
+                        : editingModuleId !== null
+                          ? "Save Module Changes"
+                          : "Create Module"}
+                    </button>
+                  </div>
+                </form>
+              </div>
+
+              {/* Module List */}
+              <div>
+                <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+                  <div>
+                    <h4 className="text-lg font-extrabold text-slate-900">
+                      Course Modules
+                    </h4>
+
+                    <p className="mt-1 text-sm text-slate-500">
+                      Select a module to manage its lessons/topics.
+                    </p>
+                  </div>
+
+                  <span className="rounded-full bg-violet-50 px-3 py-1 text-sm font-bold text-violet-700">
+                    {modules.length} Modules
+                  </span>
+                </div>
+
+                {moduleLoading && (
+                  <div className="rounded-xl bg-slate-50 py-8 text-center text-sm text-slate-500">
+                    Loading modules...
+                  </div>
+                )}
+
+                {!moduleLoading && modules.length === 0 && (
+                  <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 px-4 py-10 text-center">
+                    <h5 className="font-semibold text-slate-800">
+                      No modules added yet
+                    </h5>
+
+                    <p className="mt-2 text-sm text-slate-500">
+                      Use the form above to create the first module.
+                    </p>
+                  </div>
+                )}
+
+                {!moduleLoading && modules.length > 0 && (
+                  <div className="space-y-3">
+                    {modules.map((module) => (
+                      <article
+                        key={module.id}
+                        className={`rounded-xl border p-4 transition ${
+                          selectedModule?.id === module.id
+                            ? "border-violet-400 bg-violet-50/50"
+                            : "border-slate-200 bg-white"
+                        }`}
+                      >
+                        <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
+                          <button
+                            type="button"
+                            onClick={() => handleSelectModule(module)}
+                            className="min-w-0 flex-1 text-left"
+                          >
+                            <div className="flex flex-wrap items-center gap-2">
+                              <span className="rounded-lg bg-violet-100 px-2.5 py-1 text-xs font-bold text-violet-700">
+                                Module {module.orderIndex ?? 0}
+                              </span>
+
+                              <span className="text-xs text-slate-400">
+                                ID: {module.id}
+                              </span>
+                            </div>
+
+                            <h5 className="mt-2 break-words font-bold text-slate-900">
+                              {module.title}
+                            </h5>
+
+                            {module.description && (
+                              <p className="mt-1 whitespace-pre-line break-words text-sm leading-6 text-slate-500">
+                                {module.description}
+                              </p>
+                            )}
+
+                            <span className="mt-2 inline-block text-sm font-semibold text-violet-700">
+                              {selectedModule?.id === module.id
+                                ? "Selected module"
+                                : "Manage lessons →"}
+                            </span>
+                          </button>
+
+                          <div className="flex shrink-0 gap-2">
+                            <button
+                              type="button"
+                              onClick={() => handleEditModule(module)}
+                              className="rounded-lg border border-slate-300 px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                            >
+                              Edit
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteModule(module)}
+                              disabled={deletingModuleId === module.id}
+                              className="rounded-lg bg-red-50 px-3 py-2 text-sm font-semibold text-red-700 transition hover:bg-red-100 disabled:opacity-60"
+                            >
+                              {deletingModuleId === module.id
+                                ? "Deleting..."
+                                : "Delete"}
+                            </button>
+                          </div>
+                        </div>
+                      </article>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Lesson Management */}
+              {selectedModule && (
+                <div className="space-y-5 border-t border-slate-200 pt-6">
+                  <div>
+                    <p className="text-xs font-bold uppercase tracking-wider text-indigo-600">
+                      Selected Module
+                    </p>
+
+                    <h4 className="mt-1 break-words text-lg font-extrabold text-slate-900">
+                      {selectedModule.title}
+                    </h4>
+
+                    <p className="mt-1 text-sm text-slate-500">
+                      Manage the lessons and topics inside this module.
+                    </p>
+                  </div>
+
+                  {/* Lesson Form */}
+                  <div className="rounded-xl border border-indigo-100 bg-indigo-50/40 p-4 sm:p-5">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <h5 className="font-bold text-slate-900">
+                        {editingLessonId !== null
+                          ? "Edit Lesson / Topic"
+                          : "Add New Lesson / Topic"}
+                      </h5>
+
+                      {editingLessonId !== null && (
+                        <button
+                          type="button"
+                          onClick={resetLessonForm}
+                          className="text-sm font-semibold text-slate-600 underline"
+                        >
+                          Cancel edit
+                        </button>
+                      )}
+                    </div>
+
+                    <form
+                      onSubmit={handleLessonSubmit}
+                      className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2"
+                    >
+                      <div className="sm:col-span-2">
+                        <label
+                          htmlFor="lesson-title"
+                          className="mb-2 block text-sm font-semibold text-slate-700"
+                        >
+                          Lesson / Topic title *
+                        </label>
+
+                        <input
+                          id="lesson-title"
+                          name="title"
+                          value={lessonForm.title}
+                          onChange={handleLessonFormChange}
+                          required
+                          maxLength={150}
+                          placeholder="e.g. What is Java?"
+                          className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+                        />
+                      </div>
+
+                      <div>
+                        <label
+                          htmlFor="lesson-duration"
+                          className="mb-2 block text-sm font-semibold text-slate-700"
+                        >
+                          Duration (minutes)
+                        </label>
+
+                        <input
+                          id="lesson-duration"
+                          name="duration"
+                          type="number"
+                          min="0"
+                          step="1"
+                          value={lessonForm.duration}
+                          onChange={handleLessonFormChange}
+                          className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+                        />
+                      </div>
+
+                      <div>
+                        <label
+                          htmlFor="lesson-order"
+                          className="mb-2 block text-sm font-semibold text-slate-700"
+                        >
+                          Order index
+                        </label>
+
+                        <input
+                          id="lesson-order"
+                          name="orderIndex"
+                          type="number"
+                          min="0"
+                          step="1"
+                          value={lessonForm.orderIndex}
+                          onChange={handleLessonFormChange}
+                          className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+                        />
+                      </div>
+
+                      <div className="sm:col-span-2">
+                        <label
+                          htmlFor="lesson-description"
+                          className="mb-2 block text-sm font-semibold text-slate-700"
+                        >
+                          Description
+                        </label>
+
+                        <textarea
+                          id="lesson-description"
+                          name="description"
+                          value={lessonForm.description}
+                          onChange={handleLessonFormChange}
+                          rows={3}
+                          maxLength={2000}
+                          placeholder="Short description of this lesson..."
+                          className="w-full resize-y rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+                        />
+                      </div>
+
+                      <div className="sm:col-span-2">
+                        <label
+                          htmlFor="lesson-video-url"
+                          className="mb-2 block text-sm font-semibold text-slate-700"
+                        >
+                          Video URL
+                        </label>
+
+                        <input
+                          id="lesson-video-url"
+                          name="videoUrl"
+                          type="url"
+                          value={lessonForm.videoUrl}
+                          onChange={handleLessonFormChange}
+                          maxLength={1000}
+                          placeholder="https://www.youtube.com/watch?v=..."
+                          className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+                        />
+                      </div>
+
+                      <div className="sm:col-span-2">
+                        <label
+                          htmlFor="lesson-content"
+                          className="mb-2 block text-sm font-semibold text-slate-700"
+                        >
+                          Lesson Content
+                        </label>
+
+                        <textarea
+                          id="lesson-content"
+                          name="content"
+                          value={lessonForm.content}
+                          onChange={handleLessonFormChange}
+                          rows={7}
+                          maxLength={100000}
+                          placeholder="Write lesson notes, explanations, examples or learning materials..."
+                          className="w-full resize-y rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm leading-6 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+                        />
+
+                        <p className="mt-1 text-right text-xs text-slate-400">
+                          {lessonForm.content.length}/100000
+                        </p>
+                      </div>
+
+                      <div className="sm:col-span-2">
+                        <button
+                          type="submit"
+                          disabled={lessonSaving}
+                          className="w-full rounded-xl bg-indigo-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
+                        >
+                          {lessonSaving
+                            ? "Saving..."
+                            : editingLessonId !== null
+                              ? "Save Lesson Changes"
+                              : "Create Lesson"}
+                        </button>
+                      </div>
+                    </form>
+                  </div>
+
+                  {/* Lesson List */}
+                  <div>
+                    <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+                      <div>
+                        <h5 className="font-extrabold text-slate-900">
+                          Lessons / Topics
+                        </h5>
+
+                        <p className="mt-1 text-sm text-slate-500">
+                          Lessons belonging to this module.
+                        </p>
+                      </div>
+
+                      <span className="rounded-full bg-indigo-50 px-3 py-1 text-sm font-bold text-indigo-700">
+                        {lessons.length} Lessons
+                      </span>
+                    </div>
+
+                    {lessonLoading && (
+                      <div className="rounded-xl bg-slate-50 py-8 text-center text-sm text-slate-500">
+                        Loading lessons...
+                      </div>
+                    )}
+
+                    {!lessonLoading && lessons.length === 0 && (
+                      <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 px-4 py-8 text-center">
+                        <h6 className="font-semibold text-slate-800">
+                          No lessons added yet
+                        </h6>
+
+                        <p className="mt-2 text-sm text-slate-500">
+                          Use the lesson form above to add the first topic.
+                        </p>
+                      </div>
+                    )}
+
+                    {!lessonLoading && lessons.length > 0 && (
+                      <div className="space-y-3">
+                        {lessons.map((lesson) => (
+                          <article
+                            key={lesson.id}
+                            className="rounded-xl border border-slate-200 p-4"
+                          >
+                            <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-start">
+                              <div className="min-w-0 flex-1">
+                                <div className="flex flex-wrap items-center gap-2">
+                                  <span className="rounded-full bg-indigo-50 px-2.5 py-1 text-xs font-bold text-indigo-700">
+                                    Topic {lesson.orderIndex ?? 0}
+                                  </span>
+
+                                  <span className="text-xs text-slate-400">
+                                    ID: {lesson.id}
+                                  </span>
+
+                                  <span className="text-xs text-slate-400">
+                                    {lesson.duration ?? 0} min
+                                  </span>
+                                </div>
+
+                                <h6 className="mt-2 break-words font-bold text-slate-900">
+                                  {lesson.title}
+                                </h6>
+
+                                {lesson.description && (
+                                  <p className="mt-1 whitespace-pre-line break-words text-sm leading-6 text-slate-500">
+                                    {lesson.description}
+                                  </p>
+                                )}
+
+                                {lesson.videoUrl && (
+                                  <a
+                                    href={lesson.videoUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="mt-2 inline-block break-all text-sm font-semibold text-indigo-600 underline"
+                                  >
+                                    Open lesson video
+                                  </a>
+                                )}
+
+                                {lesson.content && (
+                                  <details className="mt-3">
+                                    <summary className="cursor-pointer text-sm font-semibold text-indigo-700">
+                                      Preview lesson content
+                                    </summary>
+
+                                    <div className="mt-2 max-h-52 overflow-y-auto whitespace-pre-wrap break-words rounded-lg bg-slate-50 p-3 text-sm leading-6 text-slate-600">
+                                      {lesson.content}
+                                    </div>
+                                  </details>
+                                )}
+                              </div>
+
+                              <div className="flex shrink-0 gap-2">
+                                <button
+                                  type="button"
+                                  onClick={() => handleEditLesson(lesson)}
+                                  className="rounded-lg border border-slate-300 px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                                >
+                                  Edit
+                                </button>
+
+                                <button
+                                  type="button"
+                                  onClick={() => handleDeleteLesson(lesson)}
+                                  disabled={deletingLessonId === lesson.id}
+                                  className="rounded-lg bg-red-50 px-3 py-2 text-sm font-semibold text-red-700 transition hover:bg-red-100 disabled:opacity-60"
+                                >
+                                  {deletingLessonId === lesson.id
+                                    ? "Deleting..."
+                                    : "Delete"}
+                                </button>
+                              </div>
+                            </div>
+                          </article>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="sticky bottom-0 flex justify-end border-t border-slate-200 bg-white p-4 sm:px-6">
+              <button
+                type="button"
+                onClick={closeModuleManagement}
+                className="w-full rounded-xl border border-slate-300 px-5 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 sm:w-auto"
+              >
+                Close Module Management
+              </button>
+            </div>
           </div>
         </div>
       )}
