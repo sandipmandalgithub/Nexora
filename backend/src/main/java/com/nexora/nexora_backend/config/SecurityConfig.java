@@ -48,6 +48,12 @@ public class SecurityConfig {
 
                 .requestMatchers(
                     HttpMethod.GET,
+                    "/api/courses",
+                    "/api/courses/**"
+                ).permitAll()
+
+                .requestMatchers(
+                    HttpMethod.GET,
                     "/api/users/me"
                 ).hasAnyRole("STUDENT", "ADMIN")
 
@@ -56,12 +62,6 @@ public class SecurityConfig {
                     "/api/users",
                     "/api/users/**"
                 ).hasRole("ADMIN")
-
-                .requestMatchers(
-                    HttpMethod.GET,
-                    "/api/courses",
-                    "/api/courses/**"
-                ).hasAnyRole("STUDENT", "ADMIN")
 
                 .requestMatchers(
                     HttpMethod.POST,
@@ -188,7 +188,6 @@ public class SecurityConfig {
                     "/api/exam-attempts/my/**"
                 ).hasRole("STUDENT")
 
-                // Admin report endpoints must be matched before /{attemptId}.
                 .requestMatchers(
                     HttpMethod.GET,
                     "/api/exam-attempts/admin/**"
