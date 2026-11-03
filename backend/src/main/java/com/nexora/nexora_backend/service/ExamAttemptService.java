@@ -26,6 +26,7 @@ import com.nexora.nexora_backend.entity.ExamAttempt.AttemptStatus;
 import com.nexora.nexora_backend.entity.ExamAttemptAnswer;
 import com.nexora.nexora_backend.entity.ExamQuestion;
 import com.nexora.nexora_backend.entity.User;
+import com.nexora.nexora_backend.repository.EnrollmentRepository;
 import com.nexora.nexora_backend.repository.ExamAttemptAnswerRepository;
 import com.nexora.nexora_backend.repository.ExamAttemptRepository;
 import com.nexora.nexora_backend.repository.ExamQuestionRepository;
@@ -39,6 +40,7 @@ public class ExamAttemptService {
     private final ExamAttemptAnswerRepository answerRepository;
     private final ExamRepository examRepository;
     private final ExamQuestionRepository questionRepository;
+    private final EnrollmentRepository enrollmentRepository;
     private final UserService userService;
 
     public ExamAttemptService(
@@ -46,17 +48,33 @@ public class ExamAttemptService {
             ExamAttemptAnswerRepository answerRepository,
             ExamRepository examRepository,
             ExamQuestionRepository questionRepository,
+            EnrollmentRepository enrollmentRepository,
             UserService userService) {
+
         this.attemptRepository = attemptRepository;
         this.answerRepository = answerRepository;
         this.examRepository = examRepository;
         this.questionRepository = questionRepository;
+        this.enrollmentRepository = enrollmentRepository;
         this.userService = userService;
     }
 
     public ExamAttemptResponse startAttempt(Long examId, String email) {
+
         User student = findStudent(email);
         Exam exam = findPublishedExam(examId);
+
+        // Verify course enrollment before starting the exam.
+        boolean enrolled = enrollmentRepository
+                .existsByStudent_IdAndCourse_Id(
+                        student.getId(),
+                        exam.getCourse().getId());
+
+        if (!enrolled) {
+            throw new ResponseStatusException(
+                    HttpStatus.FORBIDDEN,
+                    "You must be enrolled in this course to start the exam");
+        }
 
         if (exam.getDurationMinutes() == null
                 || exam.getDurationMinutes() <= 0) {
@@ -96,6 +114,7 @@ public class ExamAttemptService {
 
     @Transactional(readOnly = true)
     public List<ExamAttemptResponse> getMyAttempts(String email) {
+
         User student = findStudent(email);
 
         return attemptRepository
@@ -107,6 +126,7 @@ public class ExamAttemptService {
 
     @Transactional(readOnly = true)
     public ExamAttemptResponse getMyAttempt(Long attemptId, String email) {
+
         User student = findStudent(email);
 
         ExamAttempt attempt = attemptRepository
@@ -120,6 +140,7 @@ public class ExamAttemptService {
 
     @Transactional(readOnly = true)
     public StudentExamAnalyticsResponse getMyAnalytics(String email) {
+
         User student = findStudent(email);
 
         List<ExamAttempt> attempts = attemptRepository
@@ -224,6 +245,7 @@ public class ExamAttemptService {
         Map<Long, String> selectedOptions = new HashMap<>();
 
         for (AnswerSubmission answer : request.answers()) {
+
             if (answer == null
                     || answer.questionId() == null
                     || answer.selectedOption() == null
@@ -269,6 +291,7 @@ public class ExamAttemptService {
         int score = 0;
 
         for (ExamQuestion question : questions) {
+
             String selectedOption = selectedOptions.get(question.getId());
 
             if (selectedOption != null
@@ -279,6 +302,7 @@ public class ExamAttemptService {
         }
 
         for (ExamQuestion question : questions) {
+
             ExamAttemptAnswer savedAnswer = new ExamAttemptAnswer();
             savedAnswer.setAttempt(attempt);
             savedAnswer.setQuestion(question);
@@ -320,6 +344,7 @@ public class ExamAttemptService {
 
     @Transactional(readOnly = true)
     public ExamAttemptReviewResponse getAttemptReviewForAdmin(Long attemptId) {
+
         ExamAttempt attempt = attemptRepository.findById(attemptId)
                 .orElseThrow(() -> new ResponseStatusException(
                         HttpStatus.NOT_FOUND,
@@ -335,10 +360,12 @@ public class ExamAttemptService {
     }
 
     private ExamAttemptReviewResponse buildAttemptReview(ExamAttempt attempt) {
+
         Map<Long, String> savedOptions = new HashMap<>();
 
         for (ExamAttemptAnswer answer :
                 answerRepository.findByAttempt_Id(attempt.getId())) {
+
             savedOptions.put(
                     answer.getQuestion().getId(),
                     answer.getSelectedOption());
@@ -351,6 +378,7 @@ public class ExamAttemptService {
         List<ExamQuestionReviewResponse> reviewQuestions =
                 questions.stream()
                         .map(question -> {
+
                             String selectedOption =
                                     savedOptions.get(question.getId());
 
@@ -401,6 +429,7 @@ public class ExamAttemptService {
 
     @Transactional(readOnly = true)
     public List<ExamAttemptResponse> getAllAttempts() {
+
         return attemptRepository.findAll()
                 .stream()
                 .map(ExamAttemptResponse::from)
@@ -409,6 +438,7 @@ public class ExamAttemptService {
 
     @Transactional(readOnly = true)
     public ExamAttemptResponse getAttemptById(Long attemptId) {
+
         ExamAttempt attempt = attemptRepository.findById(attemptId)
                 .orElseThrow(() -> new ResponseStatusException(
                         HttpStatus.NOT_FOUND,
@@ -439,6 +469,7 @@ public class ExamAttemptService {
     }
 
     private User findStudent(String email) {
+
         User user = userService.getUserByEmail(email)
                 .orElseThrow(() -> new ResponseStatusException(
                         HttpStatus.UNAUTHORIZED,
@@ -460,6 +491,7 @@ public class ExamAttemptService {
     }
 
     private Exam findPublishedExam(Long examId) {
+
         Exam exam = examRepository.findById(examId)
                 .orElseThrow(() -> new ResponseStatusException(
                         HttpStatus.NOT_FOUND,

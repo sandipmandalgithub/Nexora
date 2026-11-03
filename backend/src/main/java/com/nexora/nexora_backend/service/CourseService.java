@@ -22,20 +22,35 @@ public class CourseService {
 
     @Transactional(readOnly = true)
     public List<Course> getCourses(boolean isAdmin) {
+
         if (isAdmin) {
-            return courseRepository.findAllByOrderByCreatedAtDesc();
+            return courseRepository.findByArchivedFalseOrderByCreatedAtDesc();
         }
 
-        return courseRepository.findByPublishedTrueOrderByCreatedAtDesc();
+        return courseRepository
+            .findByPublishedTrueAndArchivedFalseOrderByCreatedAtDesc();
+    }
+
+    @Transactional(readOnly = true)
+    public List<Course> getArchivedCourses() {
+        return courseRepository.findByArchivedTrueOrderByCreatedAtDesc();
     }
 
     @Transactional(readOnly = true)
     public Course getCourseById(Long id, boolean isAdmin) {
+
         Course course = courseRepository.findById(id)
             .orElseThrow(() -> new ResponseStatusException(
                 HttpStatus.NOT_FOUND,
                 "Course not found"
             ));
+
+        if (Boolean.TRUE.equals(course.getArchived())) {
+            throw new ResponseStatusException(
+                HttpStatus.NOT_FOUND,
+                "Course not found"
+            );
+        }
 
         if (!isAdmin && !Boolean.TRUE.equals(course.getPublished())) {
             throw new ResponseStatusException(
@@ -65,6 +80,8 @@ public class CourseService {
             published
         );
 
+        course.setArchived(false);
+
         return courseRepository.save(course);
     }
 
@@ -82,6 +99,13 @@ public class CourseService {
                 "Course not found"
             ));
 
+        if (Boolean.TRUE.equals(course.getArchived())) {
+            throw new ResponseStatusException(
+                HttpStatus.BAD_REQUEST,
+                "Archived courses cannot be updated. Restore the course first."
+            );
+        }
+
         applyCourseDetails(
             course,
             title,
@@ -95,13 +119,36 @@ public class CourseService {
     }
 
     public void deleteCourse(Long id) {
+
         Course course = courseRepository.findById(id)
             .orElseThrow(() -> new ResponseStatusException(
                 HttpStatus.NOT_FOUND,
                 "Course not found"
             ));
 
-        courseRepository.delete(course);
+        course.setArchived(true);
+
+        courseRepository.save(course);
+    }
+
+    public Course restoreCourse(Long id) {
+
+        Course course = courseRepository.findById(id)
+            .orElseThrow(() -> new ResponseStatusException(
+                HttpStatus.NOT_FOUND,
+                "Course not found"
+            ));
+
+        if (!Boolean.TRUE.equals(course.getArchived())) {
+            throw new ResponseStatusException(
+                HttpStatus.BAD_REQUEST,
+                "Course is not archived"
+            );
+        }
+
+        course.setArchived(false);
+
+        return courseRepository.save(course);
     }
 
     private void applyCourseDetails(
@@ -123,6 +170,7 @@ public class CourseService {
     }
 
     private String requireText(String value, String field, int maxLength) {
+
         if (value == null || value.isBlank()) {
             throw new ResponseStatusException(
                 HttpStatus.BAD_REQUEST,

@@ -6,6 +6,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -31,9 +32,22 @@ public class CourseController {
 
     @GetMapping
     public List<CourseResponse> getCourses(Authentication authentication) {
+
         boolean isAdmin = isAdmin(authentication);
 
         return courseService.getCourses(isAdmin)
+            .stream()
+            .map(CourseResponse::new)
+            .toList();
+    }
+
+    @GetMapping("/archived")
+    public List<CourseResponse> getArchivedCourses(
+            Authentication authentication) {
+
+        requireAdmin(authentication);
+
+        return courseService.getArchivedCourses()
             .stream()
             .map(CourseResponse::new)
             .toList();
@@ -96,10 +110,25 @@ public class CourseController {
             Authentication authentication) {
 
         requireAdmin(authentication);
+
+        // Soft delete: archive the course instead of permanently deleting it.
         courseService.deleteCourse(id);
     }
 
+    @PatchMapping("/{id}/restore")
+    public CourseResponse restoreCourse(
+            @PathVariable Long id,
+            Authentication authentication) {
+
+        requireAdmin(authentication);
+
+        Course course = courseService.restoreCourse(id);
+
+        return new CourseResponse(course);
+    }
+
     private boolean isAdmin(Authentication authentication) {
+
         return authentication != null
             && authentication.getAuthorities()
                 .stream()
@@ -109,6 +138,7 @@ public class CourseController {
     }
 
     private void requireAdmin(Authentication authentication) {
+
         if (!isAdmin(authentication)) {
             throw new ResponseStatusException(
                 HttpStatus.FORBIDDEN,

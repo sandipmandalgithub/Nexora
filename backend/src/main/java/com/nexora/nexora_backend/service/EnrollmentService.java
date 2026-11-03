@@ -1,4 +1,3 @@
-
 package com.nexora.nexora_backend.service;
 
 import java.util.List;
@@ -34,6 +33,7 @@ public class EnrollmentService {
     }
 
     public EnrollmentResponse enroll(String email, Long courseId) {
+
         User student = userService.getUserByEmail(email)
             .orElseThrow(() -> new ResponseStatusException(
                 HttpStatus.NOT_FOUND,
@@ -46,7 +46,10 @@ public class EnrollmentService {
                 "Course not found"
             ));
 
-        if (!Boolean.TRUE.equals(course.getPublished())) {
+        // Students cannot enroll in unpublished or archived courses.
+        if (!Boolean.TRUE.equals(course.getPublished())
+                || Boolean.TRUE.equals(course.getArchived())) {
+
             throw new ResponseStatusException(
                 HttpStatus.NOT_FOUND,
                 "Course not found"
@@ -55,6 +58,7 @@ public class EnrollmentService {
 
         if (enrollmentRepository.existsByStudent_IdAndCourse_Id(
                 student.getId(), courseId)) {
+
             throw new ResponseStatusException(
                 HttpStatus.CONFLICT,
                 "You are already enrolled in this course"
@@ -77,6 +81,7 @@ public class EnrollmentService {
 
     @Transactional(readOnly = true)
     public List<EnrollmentResponse> getMyEnrollments(String email) {
+
         return enrollmentRepository
             .findByStudent_EmailOrderByCreatedAtDesc(email)
             .stream()
@@ -86,6 +91,7 @@ public class EnrollmentService {
 
     @Transactional(readOnly = true)
     public List<EnrollmentResponse> getAllEnrollments() {
+
         return enrollmentRepository
             .findAllByOrderByCreatedAtDesc()
             .stream()
@@ -94,6 +100,7 @@ public class EnrollmentService {
     }
 
     public void cancelEnrollment(Long enrollmentId, String email) {
+
         Enrollment enrollment = enrollmentRepository
             .findByIdAndStudent_Email(enrollmentId, email)
             .orElseThrow(() -> new ResponseStatusException(

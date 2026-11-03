@@ -73,6 +73,10 @@ function formatDate(dateValue) {
 
 function AdminCourseManagement() {
   const [courses, setCourses] = useState([]);
+  const [archivedCourses, setArchivedCourses] = useState([]);
+  const [showArchived, setShowArchived] = useState(false);
+  const [archivedLoading, setArchivedLoading] = useState(false);
+  const [restoringId, setRestoringId] = useState(null);
   const [form, setForm] = useState(EMPTY_FORM);
   const [editingId, setEditingId] = useState(null);
 
@@ -136,6 +140,26 @@ function AdminCourseManagement() {
       setLoading(false);
     }
   }, []);
+
+  const fetchArchivedCourses = useCallback(async () => {
+  setArchivedLoading(true);
+
+  try {
+    const response = await axios.get(
+      `${API_BASE_URL}/courses/archived`,
+      getAuthConfig()
+    );
+
+    setArchivedCourses(
+      Array.isArray(response.data) ? response.data : []
+    );
+    setError("");
+  } catch (requestError) {
+    setError(getErrorMessage(requestError));
+  } finally {
+    setArchivedLoading(false);
+  }
+}, []);
 
   useEffect(() => {
     let active = true;
@@ -331,45 +355,79 @@ function AdminCourseManagement() {
       setUpdatingStatusId(null);
     }
   }
+async function handleDelete(course) {
+  const confirmed = window.confirm(
+    `Are you sure you want to archive "${course.title}"? Existing enrollments, exams and course data will be preserved.`
+  );
 
-  async function handleDelete(course) {
-    const confirmed = window.confirm(
-      `Are you sure you want to permanently delete "${course.title}"? This action cannot be undone.`
+  if (!confirmed) return;
+
+  setDeletingId(course.id);
+  setError("");
+  setSuccess("");
+
+  try {
+    await axios.delete(
+      `${API_BASE_URL}/courses/${course.id}`,
+      getAuthConfig()
     );
 
-    if (!confirmed) return;
-
-    setDeletingId(course.id);
-    setError("");
-    setSuccess("");
-
-    try {
-      await axios.delete(
-        `${API_BASE_URL}/courses/${course.id}`,
-        getAuthConfig()
-      );
-
-      if (editingId === course.id) {
-        resetForm();
-      }
-
-      if (selectedCourse?.id === course.id) {
-        setSelectedCourse(null);
-      }
-
-      if (moduleCourse?.id === course.id) {
-        closeModuleManagement();
-      }
-
-      setSuccess("Course deleted successfully.");
-
-      await fetchCourses();
-    } catch (requestError) {
-      setError(getErrorMessage(requestError));
-    } finally {
-      setDeletingId(null);
+    if (editingId === course.id) {
+      resetForm();
     }
+
+    if (selectedCourse?.id === course.id) {
+      setSelectedCourse(null);
+    }
+
+    if (moduleCourse?.id === course.id) {
+      closeModuleManagement();
+    }
+
+    setSuccess("Course archived successfully.");
+
+    await fetchCourses();
+
+    if (showArchived) {
+      await fetchArchivedCourses();
+    }
+  } catch (requestError) {
+    setError(getErrorMessage(requestError));
+  } finally {
+    setDeletingId(null);
   }
+}
+
+async function handleRestore(course) {
+  const confirmed = window.confirm(
+    `Are you sure you want to restore "${course.title}"?`
+  );
+
+  if (!confirmed) return;
+
+  setRestoringId(course.id);
+  setError("");
+  setSuccess("");
+
+  try {
+    await axios.patch(
+      `${API_BASE_URL}/courses/${course.id}/restore`,
+      {},
+      getAuthConfig()
+    );
+
+    setSuccess("Course restored successfully.");
+
+    await Promise.all([
+      fetchCourses(),
+      fetchArchivedCourses(),
+    ]);
+  } catch (requestError) {
+    setError(getErrorMessage(requestError));
+  } finally {
+    setRestoringId(null);
+  }
+}
 
   async function handleViewDetails(course) {
     setSelectedCourse(course);
@@ -959,13 +1017,44 @@ function AdminCourseManagement() {
         </form>
       </div>
 
+      {/* Active / Archived Course Tabs */}
+<div className="flex flex-wrap gap-3">
+  <button
+    type="button"
+    onClick={() => setShowArchived(false)}
+    className={`rounded-xl px-5 py-3 text-sm font-semibold transition ${
+      !showArchived
+        ? "bg-indigo-600 text-white"
+        : "border border-slate-300 bg-white text-slate-700 hover:bg-slate-50"
+    }`}
+  >
+    Active Courses ({courses.length})
+  </button>
+
+  <button
+  type="button"
+  onClick={async () => {
+    setShowArchived(true);
+    await fetchArchivedCourses();
+  }}
+  disabled={archivedLoading}
+  className={`rounded-xl px-5 py-3 text-sm font-semibold transition ${
+    showArchived
+      ? "bg-amber-600 text-white"
+      : "border border-slate-300 bg-white text-slate-700 hover:bg-slate-50"
+  } disabled:cursor-not-allowed disabled:opacity-60`}
+>
+  {archivedLoading ? "Loading..." : "Archived Courses"}
+</button>
+</div>
+
       {/* Course List */}
       <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6 lg:p-7">
         <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
           <div>
             <h3 className="text-lg font-extrabold text-slate-900 sm:text-xl">
-              All courses
-            </h3>
+  {showArchived ? "Archived Courses" : "All courses"}
+</h3>
 
             <p className="mt-1 text-sm leading-6 text-slate-500">
               Search and manage all courses available in the system.
@@ -973,8 +1062,10 @@ function AdminCourseManagement() {
           </div>
 
           <span className="w-fit rounded-full bg-indigo-50 px-3 py-1 text-sm font-bold text-indigo-700">
-            {filteredCourses.length} of {courses.length}
-          </span>
+  {showArchived
+    ? `${archivedCourses.length} archived courses`
+    : `${filteredCourses.length} of ${courses.length}`}
+</span>
         </div>
 
         <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-[minmax(0,1fr)_190px]">
@@ -1029,7 +1120,7 @@ function AdminCourseManagement() {
 
         {!loading && filteredCourses.length > 0 && (
           <div className="mt-5 space-y-4">
-            {filteredCourses.map((course) => (
+            {(showArchived ? archivedCourses : filteredCourses).map((course) => (
               <article
                 key={course.id}
                 className="rounded-xl border border-slate-200 p-4 transition-colors hover:border-indigo-200 sm:p-5"
@@ -1074,63 +1165,78 @@ function AdminCourseManagement() {
                   </div>
 
                   <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap lg:max-w-80 lg:shrink-0 lg:justify-end">
-                    <button
-                      type="button"
-                      onClick={() => handleViewDetails(course)}
-                      className="rounded-lg border border-indigo-200 px-3 py-2.5 text-sm font-semibold text-indigo-700 transition hover:bg-indigo-50"
-                    >
-                      View details
-                    </button>
+  {!showArchived && (
+    <>
+      <button
+        type="button"
+        onClick={() => handleViewDetails(course)}
+        className="rounded-lg border border-indigo-200 px-3 py-2.5 text-sm font-semibold text-indigo-700 transition hover:bg-indigo-50"
+      >
+        View details
+      </button>
 
-                    <button
-                      type="button"
-                      onClick={() => handleEdit(course)}
-                      className="rounded-lg border border-slate-300 px-3 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
-                    >
-                      Edit
-                    </button>
+      <button
+        type="button"
+        onClick={() => handleEdit(course)}
+        className="rounded-lg border border-slate-300 px-3 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+      >
+        Edit
+      </button>
 
-                    <button
-                      type="button"
-                      onClick={() => openModuleManagement(course)}
-                      disabled={deletingId === course.id}
-                      className="rounded-lg bg-violet-50 px-3 py-2.5 text-sm font-semibold text-violet-700 transition hover:bg-violet-100 disabled:opacity-60"
-                    >
-                      Manage Modules
-                    </button>
+      <button
+        type="button"
+        onClick={() => openModuleManagement(course)}
+        disabled={deletingId === course.id}
+        className="rounded-lg bg-violet-50 px-3 py-2.5 text-sm font-semibold text-violet-700 transition hover:bg-violet-100 disabled:opacity-60"
+      >
+        Manage Modules
+      </button>
 
-                    <button
-                      type="button"
-                      onClick={() => handleTogglePublished(course)}
-                      disabled={
-                        updatingStatusId === course.id ||
-                        deletingId === course.id
-                      }
-                      className={`rounded-lg px-3 py-2.5 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-60 ${
-                        course.published
-                          ? "bg-amber-50 text-amber-800 hover:bg-amber-100"
-                          : "bg-emerald-50 text-emerald-800 hover:bg-emerald-100"
-                      }`}
-                    >
-                      {updatingStatusId === course.id
-                        ? "Updating..."
-                        : course.published
-                          ? "Unpublish"
-                          : "Publish"}
-                    </button>
+      <button
+        type="button"
+        onClick={() => handleTogglePublished(course)}
+        disabled={
+          updatingStatusId === course.id ||
+          deletingId === course.id
+        }
+        className={`rounded-lg px-3 py-2.5 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-60 ${
+          course.published
+            ? "bg-amber-50 text-amber-800 hover:bg-amber-100"
+            : "bg-emerald-50 text-emerald-800 hover:bg-emerald-100"
+        }`}
+      >
+        {updatingStatusId === course.id
+          ? "Updating..."
+          : course.published
+            ? "Unpublish"
+            : "Publish"}
+      </button>
 
-                    <button
-                      type="button"
-                      onClick={() => handleDelete(course)}
-                      disabled={
-                        deletingId === course.id ||
-                        updatingStatusId === course.id
-                      }
-                      className="rounded-lg bg-red-50 px-3 py-2.5 text-sm font-semibold text-red-700 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-60"
-                    >
-                      {deletingId === course.id ? "Deleting..." : "Delete"}
-                    </button>
-                  </div>
+      <button
+        type="button"
+        onClick={() => handleDelete(course)}
+        disabled={
+          deletingId === course.id ||
+          updatingStatusId === course.id
+        }
+        className="rounded-lg bg-amber-50 px-3 py-2.5 text-sm font-semibold text-amber-800 transition hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-60"
+      >
+        {deletingId === course.id ? "Archiving..." : "Archive"}
+      </button>
+    </>
+  )}
+
+  {showArchived && (
+    <button
+      type="button"
+      onClick={() => handleRestore(course)}
+      disabled={restoringId === course.id}
+      className="col-span-2 rounded-lg bg-emerald-50 px-4 py-2.5 text-sm font-semibold text-emerald-800 transition hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-60 sm:col-span-1"
+    >
+      {restoringId === course.id ? "Restoring..." : "Restore Course"}
+    </button>
+  )}
+</div>
                 </div>
               </article>
             ))}

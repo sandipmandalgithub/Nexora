@@ -34,6 +34,9 @@ public class Course {
     @Column(nullable = false)
     private Boolean published = true;
 
+    @Column(nullable = false, columnDefinition = "BOOLEAN NOT NULL DEFAULT FALSE")
+    private Boolean archived = false;
+
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
@@ -57,6 +60,10 @@ public class Course {
 
         if (published == null) {
             published = true;
+        }
+
+        if (archived == null) {
+            archived = false;
         }
     }
 
@@ -111,6 +118,14 @@ public class Course {
 
     public void setPublished(Boolean published) {
         this.published = published;
+    }
+
+    public Boolean getArchived() {
+        return archived;
+    }
+
+    public void setArchived(Boolean archived) {
+        this.archived = archived;
     }
 
     public LocalDateTime getCreatedAt() {
