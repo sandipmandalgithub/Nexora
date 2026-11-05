@@ -1,13 +1,13 @@
 
 package com.nexora.nexora_backend.config;
 
-import com.nexora.nexora_backend.security.JwtAuthenticationFilter;
+import java.util.Arrays;
+import java.util.List;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
-import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -17,8 +17,7 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
-import java.util.ArrayList;
-import java.util.List;
+import com.nexora.nexora_backend.security.JwtAuthenticationFilter;
 
 @Configuration
 public class SecurityConfig {
@@ -26,19 +25,19 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(
             HttpSecurity http,
-            JwtAuthenticationFilter jwtAuthenticationFilter)
-            throws Exception {
+            JwtAuthenticationFilter jwtAuthenticationFilter) throws Exception {
 
         http
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-            .csrf(AbstractHttpConfigurer::disable)
-            .formLogin(AbstractHttpConfigurer::disable)
-            .httpBasic(AbstractHttpConfigurer::disable)
+            .csrf(csrf -> csrf.disable())
+            .formLogin(form -> form.disable())
+            .httpBasic(basic -> basic.disable())
             .sessionManagement(session -> session
                 .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
             )
             .authorizeHttpRequests(auth -> auth
 
+                // Public endpoints
                 .requestMatchers(
                     "/api/health",
                     "/api/auth/register",
@@ -46,12 +45,14 @@ public class SecurityConfig {
                     "/error"
                 ).permitAll()
 
+                // Public certificate verification
                 .requestMatchers(
                     HttpMethod.GET,
-                    "/api/courses",
-                    "/api/courses/**"
+                    "/api/certificates/verify",
+                    "/api/certificates/verify/**"
                 ).permitAll()
 
+                // User endpoints
                 .requestMatchers(
                     HttpMethod.GET,
                     "/api/users/me"
@@ -59,10 +60,17 @@ public class SecurityConfig {
 
                 .requestMatchers(
                     HttpMethod.GET,
-                    "/api/users",
                     "/api/users/**"
                 ).hasRole("ADMIN")
 
+                // Course read access
+                .requestMatchers(
+                    HttpMethod.GET,
+                    "/api/courses",
+                    "/api/courses/**"
+                ).permitAll()
+
+                // Course management - Admin only
                 .requestMatchers(
                     HttpMethod.POST,
                     "/api/courses",
@@ -71,34 +79,35 @@ public class SecurityConfig {
 
                 .requestMatchers(
                     HttpMethod.PUT,
-                    "/api/courses",
                     "/api/courses/**"
                 ).hasRole("ADMIN")
 
                 .requestMatchers(
                     HttpMethod.PATCH,
-                    "/api/courses",
                     "/api/courses/**"
                 ).hasRole("ADMIN")
 
                 .requestMatchers(
                     HttpMethod.DELETE,
-                    "/api/courses",
                     "/api/courses/**"
                 ).hasRole("ADMIN")
 
+                // Enrollment endpoints
                 .requestMatchers(
                     HttpMethod.GET,
-                    "/api/enrollments/my"
+                    "/api/enrollments/my",
+                    "/api/enrollments/my/**"
                 ).hasAnyRole("STUDENT", "ADMIN")
 
                 .requestMatchers(
                     HttpMethod.GET,
-                    "/api/enrollments"
+                    "/api/enrollments",
+                    "/api/enrollments/**"
                 ).hasRole("ADMIN")
 
                 .requestMatchers(
                     HttpMethod.POST,
+                    "/api/enrollments",
                     "/api/enrollments/**"
                 ).hasRole("STUDENT")
 
@@ -107,21 +116,26 @@ public class SecurityConfig {
                     "/api/enrollments/**"
                 ).hasRole("STUDENT")
 
+                // Student exam questions
                 .requestMatchers(
                     HttpMethod.GET,
                     "/api/student/exams/*/questions"
                 ).hasRole("STUDENT")
 
+                // Exam read access
                 .requestMatchers(
                     HttpMethod.GET,
-                    "/api/exams"
+                    "/api/exams",
+                    "/api/exams/course/*"
                 ).hasAnyRole("STUDENT", "ADMIN")
 
+                // Other exam read access - Admin only
                 .requestMatchers(
                     HttpMethod.GET,
                     "/api/exams/**"
                 ).hasRole("ADMIN")
 
+                // Exam management - Admin only
                 .requestMatchers(
                     HttpMethod.POST,
                     "/api/exams",
@@ -130,111 +144,104 @@ public class SecurityConfig {
 
                 .requestMatchers(
                     HttpMethod.PUT,
-                    "/api/exams",
                     "/api/exams/**"
                 ).hasRole("ADMIN")
 
                 .requestMatchers(
                     HttpMethod.PATCH,
-                    "/api/exams",
                     "/api/exams/**"
                 ).hasRole("ADMIN")
 
                 .requestMatchers(
                     HttpMethod.DELETE,
-                    "/api/exams",
                     "/api/exams/**"
                 ).hasRole("ADMIN")
 
+                // Exam question management - Admin only
                 .requestMatchers(
-                    HttpMethod.GET,
-                    "/api/exams/*/questions",
-                    "/api/exams/*/questions/**"
+                    "/api/exam-questions/**"
                 ).hasRole("ADMIN")
 
-                .requestMatchers(
-                    HttpMethod.POST,
-                    "/api/exams/*/questions",
-                    "/api/exams/*/questions/**"
-                ).hasRole("ADMIN")
-
-                .requestMatchers(
-                    HttpMethod.PUT,
-                    "/api/exams/*/questions",
-                    "/api/exams/*/questions/**"
-                ).hasRole("ADMIN")
-
-                .requestMatchers(
-                    HttpMethod.PATCH,
-                    "/api/exams/*/questions",
-                    "/api/exams/*/questions/**"
-                ).hasRole("ADMIN")
-
-                .requestMatchers(
-                    HttpMethod.DELETE,
-                    "/api/exams/*/questions",
-                    "/api/exams/*/questions/**"
-                ).hasRole("ADMIN")
-
+                // Exam attempt start and submit - Student only
                 .requestMatchers(
                     HttpMethod.POST,
                     "/api/exam-attempts/exams/*/start",
                     "/api/exam-attempts/*/submit"
                 ).hasRole("STUDENT")
 
+                // Student's own exam attempts
                 .requestMatchers(
                     HttpMethod.GET,
                     "/api/exam-attempts/my",
                     "/api/exam-attempts/my/**"
                 ).hasRole("STUDENT")
 
-                .requestMatchers(
-                    HttpMethod.GET,
-                    "/api/exam-attempts/admin/**"
-                ).hasRole("ADMIN")
-
+                // Admin exam attempt access
                 .requestMatchers(
                     HttpMethod.GET,
                     "/api/exam-attempts",
-                    "/api/exam-attempts/"
-                ).hasRole("ADMIN")
-
-                .requestMatchers(
-                    HttpMethod.GET,
+                    "/api/exam-attempts/",
+                    "/api/exam-attempts/admin/**",
                     "/api/exam-attempts/*"
                 ).hasRole("ADMIN")
 
+                // Grade Cards - Student's own records
+                .requestMatchers(
+                    HttpMethod.GET,
+                    "/api/grade-cards/my",
+                    "/api/grade-cards/my/**"
+                ).hasRole("STUDENT")
+
+                // Grade Cards - Admin access
+                .requestMatchers(
+                    HttpMethod.GET,
+                    "/api/grade-cards",
+                    "/api/grade-cards/",
+                    "/api/grade-cards/**"
+                ).hasRole("ADMIN")
+
+                // Certificates - Student's own records
+                .requestMatchers(
+                    HttpMethod.GET,
+                    "/api/certificates/my",
+                    "/api/certificates/my/**"
+                ).hasRole("STUDENT")
+
+                // Certificates - Admin access
+                .requestMatchers(
+                    HttpMethod.GET,
+                    "/api/certificates",
+                    "/api/certificates/",
+                    "/api/certificates/**"
+                ).hasRole("ADMIN")
+
+                // All remaining requests require authentication
                 .anyRequest().authenticated()
-            )
-            .addFilterBefore(
-                jwtAuthenticationFilter,
-                UsernamePasswordAuthenticationFilter.class
             );
+
+        http.addFilterBefore(
+            jwtAuthenticationFilter,
+            UsernamePasswordAuthenticationFilter.class
+        );
 
         return http.build();
     }
 
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
+
         CorsConfiguration configuration = new CorsConfiguration();
 
-        List<String> allowedOrigins = new ArrayList<>();
-
-        allowedOrigins.add("http://localhost:5173");
-
-        String frontendUrl = System.getenv("FRONTEND_URL");
-
-        if (frontendUrl != null && !frontendUrl.isBlank()) {
-            for (String origin : frontendUrl.split(",")) {
-                String trimmedOrigin = origin.trim();
-
-                if (!trimmedOrigin.isEmpty()) {
-                    allowedOrigins.add(trimmedOrigin);
-                }
-            }
-        }
-
-        configuration.setAllowedOrigins(allowedOrigins);
+        configuration.setAllowedOrigins(
+            Arrays.stream(
+                System.getenv().getOrDefault(
+                    "FRONTEND_URL",
+                    "http://localhost:5173"
+                ).split(","))
+                .map(String::trim)
+                .filter(origin -> !origin.isEmpty())
+                .toList()
+        );
 
         configuration.setAllowedMethods(
             List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS")
@@ -247,7 +254,7 @@ public class SecurityConfig {
         configuration.setAllowCredentials(false);
 
         UrlBasedCorsConfigurationSource source =
-                new UrlBasedCorsConfigurationSource();
+            new UrlBasedCorsConfigurationSource();
 
         source.registerCorsConfiguration("/**", configuration);
 

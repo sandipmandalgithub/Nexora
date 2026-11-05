@@ -1,9 +1,10 @@
-
 import { Navigate } from "react-router-dom";
 
 import AdminCourseManagement from "../components/AdminCourseManagement";
+import AdminExamManagement from "../components/AdminExamManagement";
 import AdminQuestionManagement from "../components/AdminQuestionManagement";
 import AdminDetailedResults from "../components/AdminDetailedResults";
+import AdminAcademicAchievements from "../components/admin/AdminAcademicAchievements";
 import AdminLayout from "../layouts/AdminLayout";
 import StudentDashboard from "./StudentDashboard";
 
@@ -43,9 +44,13 @@ export default function Dashboard() {
 
           <AdminCourseManagement />
 
+          <AdminExamManagement />
+
           <AdminQuestionManagement />
 
           <AdminDetailedResults />
+
+          <AdminAcademicAchievements />
 
           <div className="mt-6 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm leading-6 text-slate-500">
             Signed in as{" "}

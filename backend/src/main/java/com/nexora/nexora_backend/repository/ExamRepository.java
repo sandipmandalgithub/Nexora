@@ -1,4 +1,3 @@
-
 package com.nexora.nexora_backend.repository;
 
 import java.util.List;
@@ -16,4 +15,12 @@ public interface ExamRepository extends JpaRepository<Exam, Long> {
     List<Exam> findByPublishedTrueOrderByCreatedAtDesc();
 
     List<Exam> findByCourse_IdOrderByCreatedAtDesc(Long courseId);
+
+    List<Exam> findByPublishedTrueAndCourse_IdOrderByCreatedAtDesc(
+        Long courseId
+    );
+
+    List<Exam> findByPublishedTrueAndCourse_IdInOrderByCreatedAtDesc(
+        List<Long> courseIds
+    );
 }

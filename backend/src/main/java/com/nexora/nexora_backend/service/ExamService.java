@@ -13,6 +13,7 @@ import com.nexora.nexora_backend.dto.ExamResponse;
 import com.nexora.nexora_backend.entity.Course;
 import com.nexora.nexora_backend.entity.Exam;
 import com.nexora.nexora_backend.repository.CourseRepository;
+import com.nexora.nexora_backend.repository.EnrollmentRepository;
 import com.nexora.nexora_backend.repository.ExamRepository;
 
 @Service
@@ -21,12 +22,15 @@ public class ExamService {
 
     private final ExamRepository examRepository;
     private final CourseRepository courseRepository;
+    private final EnrollmentRepository enrollmentRepository;
 
     public ExamService(
             ExamRepository examRepository,
-            CourseRepository courseRepository) {
+            CourseRepository courseRepository,
+            EnrollmentRepository enrollmentRepository) {
         this.examRepository = examRepository;
         this.courseRepository = courseRepository;
+        this.enrollmentRepository = enrollmentRepository;
     }
 
     public ExamResponse createExam(ExamRequest request) {
@@ -54,8 +58,111 @@ public class ExamService {
     }
 
     @Transactional(readOnly = true)
+    public List<ExamResponse> getPublishedExamsForStudent(String email) {
+
+        List<Long> courseIds = enrollmentRepository
+            .findByStudent_EmailOrderByCreatedAtDesc(email)
+            .stream()
+            .map(enrollment -> enrollment.getCourse().getId())
+            .distinct()
+            .toList();
+
+        if (courseIds.isEmpty()) {
+            return List.of();
+        }
+
+        return examRepository
+            .findByPublishedTrueAndCourse_IdInOrderByCreatedAtDesc(courseIds)
+            .stream()
+            .map(ExamResponse::from)
+            .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<ExamResponse> getExamsByCourse(Long courseId) {
+
+        if (!courseRepository.existsById(courseId)) {
+            throw new ResponseStatusException(
+                HttpStatus.NOT_FOUND,
+                "Course not found"
+            );
+        }
+
+        return examRepository
+            .findByCourse_IdOrderByCreatedAtDesc(courseId)
+            .stream()
+            .map(ExamResponse::from)
+            .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<ExamResponse> getPublishedExamsByCourseForStudent(
+            Long courseId,
+            String email) {
+
+        if (!courseRepository.existsById(courseId)) {
+            throw new ResponseStatusException(
+                HttpStatus.NOT_FOUND,
+                "Course not found"
+            );
+        }
+
+        boolean enrolled = enrollmentRepository
+            .existsByStudent_EmailAndCourse_Id(email, courseId);
+
+        if (!enrolled) {
+            throw new ResponseStatusException(
+                HttpStatus.FORBIDDEN,
+                "You are not enrolled in this course"
+            );
+        }
+
+        return examRepository
+            .findByPublishedTrueAndCourse_IdOrderByCreatedAtDesc(courseId)
+            .stream()
+            .map(ExamResponse::from)
+            .toList();
+    }
+
+    /*
+     * Admin can retrieve any existing exam.
+     */
+    @Transactional(readOnly = true)
     public ExamResponse getExamById(Long id) {
         return ExamResponse.from(findExam(id));
+    }
+
+    /*
+     * Student can retrieve an exam only when:
+     * 1. The exam exists.
+     * 2. The exam is published.
+     * 3. The student is enrolled in its course.
+     */
+    @Transactional(readOnly = true)
+    public ExamResponse getExamByIdForStudent(Long id, String email) {
+
+        Exam exam = findExam(id);
+
+        if (!Boolean.TRUE.equals(exam.getPublished())) {
+            throw new ResponseStatusException(
+                HttpStatus.FORBIDDEN,
+                "This exam is not published"
+            );
+        }
+
+        Long courseId = exam.getCourse().getId();
+
+        boolean enrolled = enrollmentRepository
+            .existsByStudent_EmailAndCourse_Id(email, courseId);
+
+        if (!enrolled) {
+            throw new ResponseStatusException(
+                HttpStatus.FORBIDDEN,
+                "You are not enrolled in this exam's course"
+            );
+        }
+
+        return ExamResponse.from(exam);
     }
 
     public ExamResponse updateExam(Long id, ExamRequest request) {
@@ -80,6 +187,7 @@ public class ExamService {
     }
 
     private void applyRequest(Exam exam, ExamRequest request) {
+
         if (request == null) {
             throw new ResponseStatusException(
                 HttpStatus.BAD_REQUEST,

@@ -5,15 +5,7 @@ import java.util.List;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.ResponseStatus;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import com.nexora.nexora_backend.dto.ExamRequest;
 import com.nexora.nexora_backend.dto.ExamResponse;
@@ -30,25 +22,45 @@ public class ExamController {
     }
 
     @GetMapping
-    public List<ExamResponse> getAllExams(
-            Authentication authentication) {
+    public List<ExamResponse> getAllExams(Authentication authentication) {
 
-        boolean isAdmin = authentication.getAuthorities()
-            .stream()
-            .anyMatch(authority ->
-                authority.getAuthority().equals("ROLE_ADMIN")
-            );
-
-        if (isAdmin) {
+        if (isAdmin(authentication)) {
             return examService.getAllExams();
         }
 
-        return examService.getPublishedExams();
+        return examService.getPublishedExamsForStudent(
+            authentication.getName()
+        );
+    }
+
+    @GetMapping("/course/{courseId}")
+    public List<ExamResponse> getExamsByCourse(
+            @PathVariable Long courseId,
+            Authentication authentication) {
+
+        if (isAdmin(authentication)) {
+            return examService.getExamsByCourse(courseId);
+        }
+
+        return examService.getPublishedExamsByCourseForStudent(
+            courseId,
+            authentication.getName()
+        );
     }
 
     @GetMapping("/{id}")
-    public ExamResponse getExamById(@PathVariable Long id) {
-        return examService.getExamById(id);
+    public ExamResponse getExamById(
+            @PathVariable Long id,
+            Authentication authentication) {
+
+        if (isAdmin(authentication)) {
+            return examService.getExamById(id);
+        }
+
+        return examService.getExamByIdForStudent(
+            id,
+            authentication.getName()
+        );
     }
 
     @PostMapping
@@ -68,5 +80,14 @@ public class ExamController {
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void deleteExam(@PathVariable Long id) {
         examService.deleteExam(id);
+    }
+
+    private boolean isAdmin(Authentication authentication) {
+        return authentication != null
+            && authentication.getAuthorities()
+                .stream()
+                .anyMatch(authority ->
+                    authority.getAuthority().equals("ROLE_ADMIN")
+                );
     }
 }

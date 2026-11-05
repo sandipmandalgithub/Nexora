@@ -7,6 +7,7 @@ import AlertMessage from "../components/auth/AlertMessage";
 import EmptyState from "../components/ui/EmptyState";
 import StatCard from "../components/ui/StatCard";
 import StudentPerformanceAnalytics from "../components/student/StudentPerformanceAnalytics";
+import StudentGradeCards from "../components/student/StudentGradeCards";
 
 function StudentDashboard({ user }) {
   const navigate = useNavigate();
@@ -1684,6 +1685,11 @@ function StudentDashboard({ user }) {
           </div>
 
           {renderAnalytics()}
+        </section>
+
+        {/* Academic Achievements */}
+        <section className="mt-8 min-w-0">
+          <StudentGradeCards />
         </section>
 
         <section className="mt-7 min-w-0">

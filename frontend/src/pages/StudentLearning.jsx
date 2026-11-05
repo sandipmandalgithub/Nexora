@@ -21,9 +21,7 @@ function getYouTubeEmbedUrl(url) {
 
     if (hostname === "youtu.be") {
       const videoId = parsedUrl.pathname.slice(1);
-      return videoId
-        ? `https://www.youtube.com/embed/${videoId}`
-        : null;
+      return videoId ? `https://www.youtube.com/embed/${videoId}` : null;
     }
 
     if (
@@ -33,9 +31,7 @@ function getYouTubeEmbedUrl(url) {
     ) {
       if (parsedUrl.pathname === "/watch") {
         const videoId = parsedUrl.searchParams.get("v");
-        return videoId
-          ? `https://www.youtube.com/embed/${videoId}`
-          : null;
+        return videoId ? `https://www.youtube.com/embed/${videoId}` : null;
       }
 
       if (parsedUrl.pathname.startsWith("/embed/")) {
@@ -44,9 +40,7 @@ function getYouTubeEmbedUrl(url) {
 
       if (parsedUrl.pathname.startsWith("/shorts/")) {
         const videoId = parsedUrl.pathname.split("/")[2];
-        return videoId
-          ? `https://www.youtube.com/embed/${videoId}`
-          : null;
+        return videoId ? `https://www.youtube.com/embed/${videoId}` : null;
       }
     }
 
@@ -75,6 +69,11 @@ function StudentLearning() {
   const [progressLoading, setProgressLoading] = useState(false);
   const [progressError, setProgressError] = useState("");
   const [progressSuccess, setProgressSuccess] = useState("");
+
+  // Course-specific published exams.
+  const [exams, setExams] = useState([]);
+  const [examsLoading, setExamsLoading] = useState(false);
+  const [examsError, setExamsError] = useState("");
 
   const role = String(user?.role || "").toUpperCase();
   const isStudent = role === "STUDENT";
@@ -137,6 +136,8 @@ function StudentLearning() {
       setProgressError("");
       setProgressSuccess("");
       setCompletedLessons({});
+      setExams([]);
+      setExamsError("");
 
       try {
         const [courseData, moduleData] = await Promise.all([
@@ -146,9 +147,7 @@ function StudentLearning() {
 
         const modulesWithLessons = await Promise.all(
           moduleData.map(async (module) => {
-            const lessons = await apiRequest(
-              `/modules/${module.id}/lessons`
-            );
+            const lessons = await apiRequest(`/modules/${module.id}/lessons`);
 
             return {
               ...module,
@@ -176,8 +175,45 @@ function StudentLearning() {
           setSelectedLessonId(null);
         }
 
-        // Load saved lesson completion status for students.
+        // Load published exams belonging to this course.
+        // The backend verifies the student's enrollment.
         if (isStudent) {
+          setExamsLoading(true);
+
+          try {
+            const examData = await apiRequest(
+              `/exams/course/${courseId}`
+            );
+
+            if (!isActive) return;
+
+            setExams(
+              Array.isArray(examData)
+                ? examData.filter((exam) => exam.published === true)
+                : []
+            );
+          } catch (examError) {
+            if (!isActive) return;
+
+            if (examError.status === 401) {
+              localStorage.removeItem("nexoraToken");
+              localStorage.removeItem("nexoraUser");
+              navigate("/login", { replace: true });
+              return;
+            }
+
+            setExamsError(
+              examError.status === 403
+                ? "You are not enrolled in this course and cannot access its exams."
+                : examError.message
+            );
+          } finally {
+            if (isActive) {
+              setExamsLoading(false);
+            }
+          }
+
+          // Load saved lesson completion status for students.
           const lessons = modulesWithLessons.flatMap(
             (module) => module.lessons
           );
@@ -353,6 +389,17 @@ function StudentLearning() {
     } finally {
       setProgressLoading(false);
     }
+  }
+
+  function attendExam(exam) {
+    if (!exam?.id || !isStudent) return;
+
+    navigate("/dashboard", {
+      state: {
+        startExamId: exam.id,
+        returnTo: `/learn/${courseId}`,
+      },
+    });
   }
 
   const youtubeEmbedUrl = getYouTubeEmbedUrl(
@@ -585,6 +632,96 @@ function StudentLearning() {
         </aside>
 
         <main className="min-w-0 px-4 py-6 sm:px-6 sm:py-8 lg:px-10">
+          {/* Course-specific published exams */}
+          {isStudent && (
+            <section className="mx-auto mb-8 max-w-5xl rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-7">
+              <div className="flex flex-col gap-2 border-b border-slate-100 pb-5 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <p className="text-xs font-bold uppercase tracking-wider text-indigo-600">
+                    Course Assessment
+                  </p>
+                  <h2 className="mt-2 text-xl font-bold text-slate-900 sm:text-2xl">
+                    Available Exams
+                  </h2>
+                  <p className="mt-1 text-sm text-slate-500">
+                    Attend the published exams for this course.
+                  </p>
+                </div>
+
+                <span className="inline-flex w-fit items-center rounded-full bg-indigo-50 px-3 py-1.5 text-xs font-semibold text-indigo-700">
+                  {exams.length} {exams.length === 1 ? "Exam" : "Exams"}
+                </span>
+              </div>
+
+              {examsLoading ? (
+                <div className="flex items-center justify-center py-8">
+                  <div className="h-7 w-7 animate-spin rounded-full border-4 border-indigo-100 border-t-indigo-600" />
+                  <span className="ml-3 text-sm text-slate-500">
+                    Loading course exams...
+                  </span>
+                </div>
+              ) : examsError ? (
+                <div className="mt-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                  {examsError}
+                </div>
+              ) : exams.length === 0 ? (
+                <div className="py-9 text-center">
+                  <div className="text-4xl">📝</div>
+                  <h3 className="mt-3 font-semibold text-slate-800">
+                    No Published Exams Yet
+                  </h3>
+                  <p className="mt-1 text-sm text-slate-500">
+                    Published exams for this course will appear here.
+                  </p>
+                </div>
+              ) : (
+                <div className="mt-5 grid gap-4 md:grid-cols-2">
+                  {exams.map((exam) => (
+                    <article
+                      key={exam.id}
+                      className="flex flex-col rounded-xl border border-slate-200 p-5 transition hover:border-indigo-200 hover:shadow-sm"
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-indigo-50 text-xl">
+                          📝
+                        </div>
+
+                        <span className="rounded-full bg-green-50 px-3 py-1 text-xs font-semibold text-green-700">
+                          Published
+                        </span>
+                      </div>
+
+                      <h3 className="mt-4 text-base font-bold text-slate-900">
+                        {exam.title}
+                      </h3>
+
+                      {exam.description && (
+                        <p className="mt-2 line-clamp-3 text-sm leading-6 text-slate-600">
+                          {exam.description}
+                        </p>
+                      )}
+
+                      <div className="mt-4 flex items-center gap-2 text-sm text-slate-500">
+                        <span>⏱</span>
+                        <span>
+                          {exam.durationMinutes} minutes
+                        </span>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => attendExam(exam)}
+                        className="mt-5 w-full rounded-xl bg-indigo-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-indigo-700"
+                      >
+                        Attend Exam →
+                      </button>
+                    </article>
+                  ))}
+                </div>
+              )}
+            </section>
+          )}
+
           {selectedLesson ? (
             <div className="mx-auto max-w-5xl">
               <div className="mb-6">
