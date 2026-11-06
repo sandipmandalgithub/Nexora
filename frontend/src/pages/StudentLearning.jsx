@@ -1,6 +1,23 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
+import {
+  ArrowLeft,
+  ArrowRight,
+  BookOpen,
+  BookOpenCheck,
+  CheckCircle2,
+  ChevronDown,
+  ChevronRight,
+  CircleAlert,
+  ClipboardList,
+  Clock3,
+  FileText,
+  GraduationCap,
+  Layers3,
+  PlayCircle,
+  Sparkles,
+} from "lucide-react";
 import { API_BASE_URL } from "../utils/api";
 
 function getStoredUser() {
@@ -70,7 +87,6 @@ function StudentLearning() {
   const [progressError, setProgressError] = useState("");
   const [progressSuccess, setProgressSuccess] = useState("");
 
-  // Course-specific published exams.
   const [exams, setExams] = useState([]);
   const [examsLoading, setExamsLoading] = useState(false);
   const [examsError, setExamsError] = useState("");
@@ -175,8 +191,6 @@ function StudentLearning() {
           setSelectedLessonId(null);
         }
 
-        // Load published exams belonging to this course.
-        // The backend verifies the student's enrollment.
         if (isStudent) {
           setExamsLoading(true);
 
@@ -213,7 +227,6 @@ function StudentLearning() {
             }
           }
 
-          // Load saved lesson completion status for students.
           const lessons = modulesWithLessons.flatMap(
             (module) => module.lessons
           );
@@ -412,11 +425,21 @@ function StudentLearning() {
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-slate-50 px-4">
-        <div className="text-center">
-          <div className="mx-auto h-10 w-10 animate-spin rounded-full border-4 border-indigo-100 border-t-indigo-600" />
-          <p className="mt-4 text-sm font-medium text-slate-600">
-            Loading your learning content...
+      <div className="min-h-screen bg-slate-50 px-4 py-10 sm:px-6">
+        <div className="mx-auto max-w-6xl animate-pulse">
+          <div className="h-8 w-48 rounded-lg bg-slate-200" />
+
+          <div className="mt-8 grid gap-6 lg:grid-cols-[340px_minmax(0,1fr)]">
+            <div className="h-[520px] rounded-2xl bg-white shadow-sm" />
+            <div className="space-y-6">
+              <div className="h-14 rounded-xl bg-slate-200" />
+              <div className="aspect-video rounded-2xl bg-slate-200" />
+              <div className="h-48 rounded-2xl bg-white" />
+            </div>
+          </div>
+
+          <p className="mt-8 text-center text-sm font-medium text-slate-500">
+            Preparing your learning experience...
           </p>
         </div>
       </div>
@@ -426,23 +449,24 @@ function StudentLearning() {
   if (error) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-slate-50 px-4 py-10">
-        <div className="w-full max-w-lg rounded-2xl border border-slate-200 bg-white p-6 text-center shadow-sm sm:p-8">
-          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-red-50 text-2xl text-red-600">
-            !
+        <div className="w-full max-w-lg rounded-3xl border border-slate-200 bg-white p-7 text-center shadow-sm sm:p-10">
+          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-red-50 text-red-600">
+            <CircleAlert className="h-8 w-8" />
           </div>
 
-          <h1 className="mt-4 text-xl font-bold text-slate-900">
-            Unable to Open Course
+          <h1 className="mt-6 text-xl font-extrabold tracking-tight text-slate-900 sm:text-2xl">
+            Unable to open course
           </h1>
 
-          <p className="mt-3 text-sm leading-6 text-slate-600">
+          <p className="mt-3 text-sm leading-7 text-slate-600">
             {error}
           </p>
 
           <Link
             to="/dashboard"
-            className="mt-6 inline-flex items-center justify-center rounded-lg bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-indigo-700"
+            className="mt-7 inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-indigo-600 px-6 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-indigo-700 focus:outline-none focus:ring-4 focus:ring-indigo-200"
           >
+            <ArrowLeft className="h-4 w-4" />
             Back to Dashboard
           </Link>
         </div>
@@ -452,123 +476,183 @@ function StudentLearning() {
 
   return (
     <div className="min-h-screen bg-slate-50">
-      <header className="sticky top-0 z-30 border-b border-slate-200 bg-white">
+      {/* Learning Header */}
+      <header className="sticky top-0 z-30 border-b border-slate-200 bg-white/95 shadow-sm backdrop-blur">
         <div className="mx-auto flex max-w-[1600px] items-center justify-between gap-4 px-4 py-3 sm:px-6 lg:px-8">
-          <div className="min-w-0">
+          <div className="flex min-w-0 items-center gap-3">
             <Link
               to="/dashboard"
-              className="text-sm font-semibold text-indigo-600 hover:text-indigo-700"
+              aria-label="Back to dashboard"
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-slate-200 text-slate-600 transition hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-300"
             >
-              ← Dashboard
+              <ArrowLeft className="h-5 w-5" />
             </Link>
 
-            <h1 className="mt-1 truncate text-base font-bold text-slate-900 sm:text-lg">
-              {course?.title || "Course Learning"}
-            </h1>
+            <div className="min-w-0">
+              <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-indigo-600 sm:text-xs">
+                Nexora Learning
+              </p>
+              <h1 className="mt-0.5 truncate text-sm font-extrabold text-slate-900 sm:text-base">
+                {course?.title || "Course Learning"}
+              </h1>
+            </div>
           </div>
 
-          <div className="hidden shrink-0 text-right sm:block">
-            <p className="text-xs text-slate-500">Course Content</p>
-            <p className="text-sm font-semibold text-slate-800">
-              {modules.length} Modules · {totalLessons} Lessons
-            </p>
+          <div className="hidden shrink-0 items-center gap-3 rounded-xl bg-slate-50 px-4 py-2 sm:flex">
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-indigo-100 text-indigo-600">
+              <Layers3 className="h-5 w-5" />
+            </div>
+            <div>
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">
+                Course Content
+              </p>
+              <p className="text-sm font-bold text-slate-800">
+                {modules.length} Modules · {totalLessons} Lessons
+              </p>
+            </div>
           </div>
         </div>
       </header>
 
       <div className="mx-auto grid max-w-[1600px] lg:grid-cols-[340px_minmax(0,1fr)]">
+        {/* Course Curriculum Sidebar */}
         <aside className="border-b border-slate-200 bg-white lg:min-h-[calc(100vh-69px)] lg:border-b-0 lg:border-r">
-          <div className="border-b border-slate-200 px-5 py-5">
-            <p className="text-xs font-bold uppercase tracking-wider text-indigo-600">
+          <div className="border-b border-slate-200 bg-gradient-to-br from-white to-slate-50 px-5 py-6">
+            <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.14em] text-indigo-600">
+              <BookOpenCheck className="h-4 w-4" />
               Course Curriculum
-            </p>
+            </div>
 
-            <h2 className="mt-2 text-lg font-bold text-slate-900">
+            <h2 className="mt-3 text-xl font-extrabold tracking-tight text-slate-900">
               Learning Modules
             </h2>
 
-            <p className="mt-1 text-sm text-slate-500">
-              Select a lesson to start learning.
+            <p className="mt-1.5 text-sm leading-6 text-slate-500">
+              Follow the curriculum and complete each lesson at your own pace.
             </p>
 
             {isStudent && (
-              <div className="mt-5">
-                <div className="mb-2 flex items-center justify-between text-xs">
-                  <span className="font-semibold text-slate-600">
-                    Course Progress
-                  </span>
-                  <span className="font-bold text-indigo-600">
+              <div className="mt-6 rounded-xl border border-indigo-100 bg-white p-4 shadow-sm">
+                <div className="mb-3 flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-2">
+                    <Sparkles className="h-4 w-4 text-indigo-600" />
+                    <span className="text-xs font-bold uppercase tracking-wider text-slate-600">
+                      Your Progress
+                    </span>
+                  </div>
+
+                  <span className="text-lg font-black tabular-nums text-indigo-600">
                     {progressPercentage}%
                   </span>
                 </div>
 
-                <div className="h-2 overflow-hidden rounded-full bg-slate-100">
+                <div
+                  className="h-2.5 overflow-hidden rounded-full bg-slate-100"
+                  role="progressbar"
+                  aria-label="Course completion progress"
+                  aria-valuenow={progressPercentage}
+                  aria-valuemin={0}
+                  aria-valuemax={100}
+                >
                   <div
-                    className="h-full rounded-full bg-indigo-600 transition-all"
+                    className="h-full rounded-full bg-gradient-to-r from-indigo-600 to-violet-500 transition-all duration-500"
                     style={{ width: `${progressPercentage}%` }}
                   />
                 </div>
 
-                <p className="mt-2 text-xs text-slate-500">
-                  {completedCount} of {totalLessons} lessons completed
-                </p>
+                <div className="mt-3 flex items-center justify-between text-xs">
+                  <span className="font-medium text-slate-500">
+                    Lessons completed
+                  </span>
+                  <span className="font-bold text-slate-700">
+                    {completedCount} / {totalLessons}
+                  </span>
+                </div>
               </div>
             )}
           </div>
 
           {modules.length === 0 ? (
-            <div className="px-5 py-10 text-center">
-              <div className="text-3xl">📚</div>
-              <h3 className="mt-3 font-semibold text-slate-800">
+            <div className="px-5 py-12 text-center">
+              <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-100 text-slate-400">
+                <BookOpen className="h-7 w-7" />
+              </div>
+
+              <h3 className="mt-4 font-bold text-slate-800">
                 No Modules Available
               </h3>
-              <p className="mt-1 text-sm text-slate-500">
+
+              <p className="mt-2 text-sm leading-6 text-slate-500">
                 Course lessons will appear here once the instructor adds them.
               </p>
             </div>
           ) : (
-            <div className="max-h-[55vh] overflow-y-auto p-3 lg:max-h-[calc(100vh-190px)]">
+            <div className="max-h-[55vh] space-y-3 overflow-y-auto p-3 lg:max-h-[calc(100vh-260px)]">
               {modules.map((module, moduleIndex) => {
                 const isExpanded = Boolean(expandedModules[module.id]);
+
+                const moduleCompleted = module.lessons.filter(
+                  (lesson) => completedLessons[String(lesson.id)]
+                ).length;
 
                 return (
                   <div
                     key={module.id}
-                    className="mb-2 overflow-hidden rounded-xl border border-slate-200"
+                    className={`overflow-hidden rounded-xl border transition ${
+                      isExpanded
+                        ? "border-indigo-200 shadow-sm"
+                        : "border-slate-200"
+                    }`}
                   >
                     <button
                       type="button"
                       onClick={() => toggleModule(module.id)}
-                      className="flex w-full items-center justify-between gap-3 bg-slate-50 px-4 py-3 text-left transition hover:bg-slate-100"
+                      aria-expanded={isExpanded}
+                      className={`flex w-full items-center justify-between gap-3 px-4 py-4 text-left transition ${
+                        isExpanded
+                          ? "bg-indigo-50/70"
+                          : "bg-white hover:bg-slate-50"
+                      }`}
                     >
                       <div className="flex min-w-0 items-center gap-3">
-                        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-indigo-100 text-xs font-bold text-indigo-700">
-                          {moduleIndex + 1}
+                        <span
+                          className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-xs font-extrabold ${
+                            isExpanded
+                              ? "bg-indigo-600 text-white"
+                              : "bg-slate-100 text-slate-600"
+                          }`}
+                        >
+                          {String(moduleIndex + 1).padStart(2, "0")}
                         </span>
 
                         <div className="min-w-0">
-                          <p className="truncate text-sm font-semibold text-slate-800">
+                          <p className="truncate text-sm font-bold text-slate-800">
                             {module.title}
                           </p>
-                          <p className="mt-0.5 text-xs text-slate-500">
+                          <p className="mt-1 text-xs text-slate-500">
                             {module.lessons.length} Lessons
+                            {isStudent && module.lessons.length > 0
+                              ? ` · ${moduleCompleted} completed`
+                              : ""}
                           </p>
                         </div>
                       </div>
 
-                      <span className="shrink-0 text-slate-500">
-                        {isExpanded ? "−" : "+"}
-                      </span>
+                      {isExpanded ? (
+                        <ChevronDown className="h-5 w-5 shrink-0 text-indigo-600" />
+                      ) : (
+                        <ChevronRight className="h-5 w-5 shrink-0 text-slate-400" />
+                      )}
                     </button>
 
                     {isExpanded && (
-                      <div className="border-t border-slate-200 p-2">
+                      <div className="border-t border-slate-100 bg-white p-2">
                         {module.lessons.length === 0 ? (
-                          <p className="px-3 py-3 text-xs text-slate-500">
+                          <p className="px-3 py-4 text-xs text-slate-500">
                             No lessons in this module yet.
                           </p>
                         ) : (
-                          module.lessons.map((lesson, lessonIndex) => {
+                          module.lessons.map((lesson) => {
                             const isSelected =
                               String(lesson.id) === String(selectedLessonId);
 
@@ -583,37 +667,49 @@ function StudentLearning() {
                                 onClick={() =>
                                   selectLesson(lesson.id, module.id)
                                 }
-                                className={`mb-1 flex w-full items-start gap-3 rounded-lg px-3 py-3 text-left transition last:mb-0 ${
+                                aria-current={isSelected ? "true" : undefined}
+                                className={`mb-1 flex w-full items-start gap-3 rounded-xl px-3 py-3 text-left transition last:mb-0 ${
                                   isSelected
-                                    ? "bg-indigo-50 text-indigo-700"
-                                    : "text-slate-700 hover:bg-slate-50"
+                                    ? "bg-indigo-50 ring-1 ring-inset ring-indigo-100"
+                                    : "hover:bg-slate-50"
                                 }`}
                               >
                                 <span
-                                  className={`mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-semibold ${
+                                  className={`mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg ${
                                     isCompleted
-                                      ? "bg-green-100 text-green-700"
+                                      ? "bg-emerald-100 text-emerald-700"
                                       : isSelected
                                         ? "bg-indigo-600 text-white"
-                                        : "bg-slate-100 text-slate-600"
+                                        : "bg-slate-100 text-slate-500"
                                   }`}
                                 >
-                                  {isCompleted ? "✓" : lessonIndex + 1}
+                                  {isCompleted ? (
+                                    <CheckCircle2 className="h-4 w-4" />
+                                  ) : (
+                                    <PlayCircle className="h-4 w-4" />
+                                  )}
                                 </span>
 
                                 <span className="min-w-0 flex-1">
-                                  <span className="block text-sm font-medium leading-5">
+                                  <span
+                                    className={`block text-sm font-semibold leading-5 ${
+                                      isSelected
+                                        ? "text-indigo-700"
+                                        : "text-slate-700"
+                                    }`}
+                                  >
                                     {lesson.title}
                                   </span>
 
                                   {lesson.duration > 0 && (
-                                    <span className="mt-1 block text-xs text-slate-500">
+                                    <span className="mt-1.5 inline-flex items-center gap-1 text-xs text-slate-500">
+                                      <Clock3 className="h-3 w-3" />
                                       {lesson.duration} minutes
                                     </span>
                                   )}
 
                                   {isCompleted && (
-                                    <span className="mt-1 block text-xs font-semibold text-green-600">
+                                    <span className="mt-1 block text-[11px] font-bold uppercase tracking-wide text-emerald-600">
                                       Completed
                                     </span>
                                   )}
@@ -631,117 +727,150 @@ function StudentLearning() {
           )}
         </aside>
 
-        <main className="min-w-0 px-4 py-6 sm:px-6 sm:py-8 lg:px-10">
-          {/* Course-specific published exams */}
+        {/* Main Learning Area */}
+        <main className="min-w-0 px-4 py-6 sm:px-6 sm:py-8 lg:px-10 lg:py-9">
+          {/* Course Exams */}
           {isStudent && (
-            <section className="mx-auto mb-8 max-w-5xl rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-7">
-              <div className="flex flex-col gap-2 border-b border-slate-100 pb-5 sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                  <p className="text-xs font-bold uppercase tracking-wider text-indigo-600">
-                    Course Assessment
-                  </p>
-                  <h2 className="mt-2 text-xl font-bold text-slate-900 sm:text-2xl">
-                    Available Exams
-                  </h2>
-                  <p className="mt-1 text-sm text-slate-500">
-                    Attend the published exams for this course.
-                  </p>
+            <section className="mx-auto mb-8 max-w-5xl overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+              <div className="flex flex-col gap-4 border-b border-slate-100 p-5 sm:flex-row sm:items-center sm:justify-between sm:p-7">
+                <div className="flex items-start gap-3">
+                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-violet-50 text-violet-600">
+                    <ClipboardList className="h-5 w-5" />
+                  </div>
+
+                  <div>
+                    <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-violet-600 sm:text-xs">
+                      Course Assessment
+                    </p>
+                    <h2 className="mt-1 text-xl font-extrabold tracking-tight text-slate-900 sm:text-2xl">
+                      Available Exams
+                    </h2>
+                    <p className="mt-1 text-sm text-slate-500">
+                      Attend the published exams for this course.
+                    </p>
+                  </div>
                 </div>
 
-                <span className="inline-flex w-fit items-center rounded-full bg-indigo-50 px-3 py-1.5 text-xs font-semibold text-indigo-700">
+                <span className="inline-flex w-fit items-center gap-2 rounded-full bg-violet-50 px-3 py-1.5 text-xs font-bold text-violet-700">
+                  <ClipboardList className="h-3.5 w-3.5" />
                   {exams.length} {exams.length === 1 ? "Exam" : "Exams"}
                 </span>
               </div>
 
-              {examsLoading ? (
-                <div className="flex items-center justify-center py-8">
-                  <div className="h-7 w-7 animate-spin rounded-full border-4 border-indigo-100 border-t-indigo-600" />
-                  <span className="ml-3 text-sm text-slate-500">
-                    Loading course exams...
-                  </span>
-                </div>
-              ) : examsError ? (
-                <div className="mt-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-                  {examsError}
-                </div>
-              ) : exams.length === 0 ? (
-                <div className="py-9 text-center">
-                  <div className="text-4xl">📝</div>
-                  <h3 className="mt-3 font-semibold text-slate-800">
-                    No Published Exams Yet
-                  </h3>
-                  <p className="mt-1 text-sm text-slate-500">
-                    Published exams for this course will appear here.
-                  </p>
-                </div>
-              ) : (
-                <div className="mt-5 grid gap-4 md:grid-cols-2">
-                  {exams.map((exam) => (
-                    <article
-                      key={exam.id}
-                      className="flex flex-col rounded-xl border border-slate-200 p-5 transition hover:border-indigo-200 hover:shadow-sm"
-                    >
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-indigo-50 text-xl">
-                          📝
+              <div className="p-5 sm:p-7">
+                {examsLoading ? (
+                  <div className="flex items-center justify-center gap-3 py-8">
+                    <span className="h-6 w-6 animate-spin rounded-full border-3 border-indigo-100 border-t-indigo-600" />
+                    <span className="text-sm font-medium text-slate-500">
+                      Loading course exams...
+                    </span>
+                  </div>
+                ) : examsError ? (
+                  <div className="flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 p-4 text-sm leading-6 text-red-700">
+                    <CircleAlert className="mt-0.5 h-5 w-5 shrink-0" />
+                    {examsError}
+                  </div>
+                ) : exams.length === 0 ? (
+                  <div className="py-8 text-center">
+                    <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-100 text-slate-400">
+                      <ClipboardList className="h-7 w-7" />
+                    </div>
+
+                    <h3 className="mt-4 font-bold text-slate-800">
+                      No Published Exams Yet
+                    </h3>
+
+                    <p className="mt-2 text-sm text-slate-500">
+                      Published exams for this course will appear here.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="grid gap-4 md:grid-cols-2">
+                    {exams.map((exam) => (
+                      <article
+                        key={exam.id}
+                        className="flex flex-col rounded-xl border border-slate-200 p-5 transition hover:-translate-y-0.5 hover:border-indigo-200 hover:shadow-md"
+                      >
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600">
+                            <FileText className="h-5 w-5" />
+                          </div>
+
+                          <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700">
+                            <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                            Published
+                          </span>
                         </div>
 
-                        <span className="rounded-full bg-green-50 px-3 py-1 text-xs font-semibold text-green-700">
-                          Published
-                        </span>
-                      </div>
+                        <h3 className="mt-4 text-base font-extrabold leading-6 text-slate-900">
+                          {exam.title}
+                        </h3>
 
-                      <h3 className="mt-4 text-base font-bold text-slate-900">
-                        {exam.title}
-                      </h3>
+                        {exam.description && (
+                          <p className="mt-2 line-clamp-3 text-sm leading-6 text-slate-600">
+                            {exam.description}
+                          </p>
+                        )}
 
-                      {exam.description && (
-                        <p className="mt-2 line-clamp-3 text-sm leading-6 text-slate-600">
-                          {exam.description}
-                        </p>
-                      )}
-
-                      <div className="mt-4 flex items-center gap-2 text-sm text-slate-500">
-                        <span>⏱</span>
-                        <span>
+                        <div className="mt-4 flex items-center gap-2 text-sm font-medium text-slate-500">
+                          <Clock3 className="h-4 w-4 text-indigo-500" />
                           {exam.durationMinutes} minutes
-                        </span>
-                      </div>
+                        </div>
 
-                      <button
-                        type="button"
-                        onClick={() => attendExam(exam)}
-                        className="mt-5 w-full rounded-xl bg-indigo-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-indigo-700"
-                      >
-                        Attend Exam →
-                      </button>
-                    </article>
-                  ))}
-                </div>
-              )}
+                        <button
+                          type="button"
+                          onClick={() => attendExam(exam)}
+                          className="mt-5 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-indigo-600 px-5 py-3 text-sm font-bold text-white transition hover:bg-indigo-700 focus:outline-none focus:ring-4 focus:ring-indigo-200"
+                        >
+                          Attend Exam
+                          <ArrowRight className="h-4 w-4" />
+                        </button>
+                      </article>
+                    ))}
+                  </div>
+                )}
+              </div>
             </section>
           )}
 
           {selectedLesson ? (
             <div className="mx-auto max-w-5xl">
+              {/* Lesson Heading */}
               <div className="mb-6">
-                <p className="text-xs font-semibold uppercase tracking-wider text-indigo-600">
-                  {selectedLesson.moduleTitle}
-                </p>
+                <div className="flex flex-wrap items-center gap-2 text-xs font-bold uppercase tracking-[0.12em] text-indigo-600">
+                  <BookOpen className="h-4 w-4" />
+                  <span>{selectedLesson.moduleTitle}</span>
+                  <ChevronRight className="h-3.5 w-3.5 text-slate-400" />
+                  <span className="text-slate-400">
+                    Lesson {selectedLessonIndex + 1}
+                  </span>
+                </div>
 
-                <h2 className="mt-2 text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
-                  {selectedLesson.title}
-                </h2>
+                <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                  <div className="min-w-0">
+                    <h2 className="break-words text-2xl font-black tracking-tight text-slate-900 sm:text-3xl">
+                      {selectedLesson.title}
+                    </h2>
 
-                {selectedLesson.description && (
-                  <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-600 sm:text-base">
-                    {selectedLesson.description}
-                  </p>
-                )}
+                    {selectedLesson.description && (
+                      <p className="mt-3 max-w-3xl text-sm leading-7 text-slate-600 sm:text-base">
+                        {selectedLesson.description}
+                      </p>
+                    )}
+                  </div>
+
+                  {isSelectedLessonCompleted && (
+                    <span className="inline-flex w-fit shrink-0 items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-2 text-xs font-bold text-emerald-700">
+                      <CheckCircle2 className="h-4 w-4" />
+                      Completed
+                    </span>
+                  )}
+                </div>
               </div>
 
+              {/* Video Player */}
               {youtubeEmbedUrl ? (
-                <div className="mb-7 overflow-hidden rounded-2xl bg-black shadow-sm">
+                <div className="mb-7 overflow-hidden rounded-2xl border border-slate-200 bg-black shadow-lg shadow-slate-300/40">
                   <div className="aspect-video">
                     <iframe
                       src={youtubeEmbedUrl}
@@ -753,7 +882,7 @@ function StudentLearning() {
                   </div>
                 </div>
               ) : isDirectVideo ? (
-                <div className="mb-7 overflow-hidden rounded-2xl bg-black shadow-sm">
+                <div className="mb-7 overflow-hidden rounded-2xl border border-slate-200 bg-black shadow-lg shadow-slate-300/40">
                   <video
                     key={selectedLesson.videoUrl}
                     controls
@@ -764,102 +893,165 @@ function StudentLearning() {
                   </video>
                 </div>
               ) : selectedLesson.videoUrl ? (
-                <div className="mb-7 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
-                  This video URL format is not supported by the embedded player.
-                  <a
-                    href={selectedLesson.videoUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="ml-1 font-semibold underline"
-                  >
-                    Open video
-                  </a>
+                <div className="mb-7 flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm leading-6 text-amber-800">
+                  <CircleAlert className="mt-0.5 h-5 w-5 shrink-0" />
+                  <div>
+                    <p className="font-semibold">
+                      Video format not supported
+                    </p>
+                    <p className="mt-1">
+                      This video URL format cannot be displayed in the embedded player.
+                      <a
+                        href={selectedLesson.videoUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="ml-1 font-bold underline underline-offset-2"
+                      >
+                        Open video
+                      </a>
+                    </p>
+                  </div>
                 </div>
               ) : null}
 
-              <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-7">
-                <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-4">
-                  <h3 className="text-lg font-bold text-slate-900">
-                    Lesson Content
-                  </h3>
+              {/* Lesson Content */}
+              <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+                <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 bg-slate-50/70 px-5 py-4 sm:px-7">
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-indigo-100 text-indigo-600">
+                      <FileText className="h-5 w-5" />
+                    </div>
+
+                    <h3 className="text-base font-extrabold text-slate-900 sm:text-lg">
+                      Lesson Content
+                    </h3>
+                  </div>
 
                   {selectedLesson.duration > 0 && (
-                    <span className="rounded-full bg-indigo-50 px-3 py-1 text-xs font-semibold text-indigo-700">
+                    <span className="inline-flex items-center gap-1.5 rounded-full bg-white px-3 py-1.5 text-xs font-bold text-slate-600 ring-1 ring-slate-200">
+                      <Clock3 className="h-3.5 w-3.5 text-indigo-500" />
                       {selectedLesson.duration} minutes
                     </span>
                   )}
                 </div>
 
-                {selectedLesson.content ? (
-                  <div className="whitespace-pre-wrap break-words pt-5 text-sm leading-8 text-slate-700 sm:text-base">
-                    {selectedLesson.content}
-                  </div>
-                ) : (
-                  <p className="pt-5 text-sm text-slate-500">
-                    No written content is available for this lesson.
-                  </p>
-                )}
+                <div className="p-5 sm:p-7">
+                  {selectedLesson.content ? (
+                    <div className="whitespace-pre-wrap break-words text-sm leading-8 text-slate-700 sm:text-base">
+                      {selectedLesson.content}
+                    </div>
+                  ) : (
+                    <div className="py-6 text-center">
+                      <FileText className="mx-auto h-8 w-8 text-slate-300" />
+                      <p className="mt-3 text-sm text-slate-500">
+                        No written content is available for this lesson.
+                      </p>
+                    </div>
+                  )}
+                </div>
               </section>
 
+              {/* Lesson Completion */}
               {isStudent && (
-                <section className="mt-6 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
-                  <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                    <div>
-                      <h3 className="font-bold text-slate-900">
-                        Lesson Completion
-                      </h3>
+                <section className="mt-6 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+                  <div className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6">
+                    <div className="flex items-start gap-3">
+                      <div
+                        className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${
+                          isSelectedLessonCompleted
+                            ? "bg-emerald-50 text-emerald-600"
+                            : "bg-indigo-50 text-indigo-600"
+                        }`}
+                      >
+                        {isSelectedLessonCompleted ? (
+                          <CheckCircle2 className="h-6 w-6" />
+                        ) : (
+                          <GraduationCap className="h-6 w-6" />
+                        )}
+                      </div>
 
-                      <p className="mt-1 text-sm text-slate-500">
-                        Mark this lesson as complete after finishing the content.
-                      </p>
+                      <div>
+                        <h3 className="font-extrabold text-slate-900">
+                          Lesson Completion
+                        </h3>
+                        <p className="mt-1 text-sm leading-6 text-slate-500">
+                          Mark this lesson as complete after finishing the content.
+                        </p>
+                      </div>
                     </div>
 
                     {isSelectedLessonCompleted ? (
-                      <span className="inline-flex items-center justify-center rounded-xl bg-green-50 px-5 py-3 text-sm font-semibold text-green-700">
-                        ✓ Lesson Completed
+                      <span className="inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-xl bg-emerald-50 px-5 py-3 text-sm font-bold text-emerald-700">
+                        <CheckCircle2 className="h-4 w-4" />
+                        Lesson Completed
                       </span>
                     ) : (
                       <button
                         type="button"
                         onClick={markLessonComplete}
                         disabled={progressLoading}
-                        className="rounded-xl bg-indigo-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-60"
+                        className="inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-xl bg-indigo-600 px-5 py-3 text-sm font-bold text-white transition hover:bg-indigo-700 focus:outline-none focus:ring-4 focus:ring-indigo-200 disabled:cursor-not-allowed disabled:opacity-60"
                       >
-                        {progressLoading
-                          ? "Saving Progress..."
-                          : "Mark as Complete"}
+                        {progressLoading ? (
+                          <>
+                            <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white" />
+                            Saving Progress...
+                          </>
+                        ) : (
+                          <>
+                            <CheckCircle2 className="h-4 w-4" />
+                            Mark as Complete
+                          </>
+                        )}
                       </button>
                     )}
                   </div>
 
-                  {progressError && (
-                    <p className="mt-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-                      {progressError}
-                    </p>
-                  )}
+                  {(progressError || progressSuccess) && (
+                    <div className="px-5 pb-5 sm:px-6">
+                      {progressError && (
+                        <p
+                          role="alert"
+                          className="flex items-start gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm leading-6 text-red-700"
+                        >
+                          <CircleAlert className="mt-0.5 h-4 w-4 shrink-0" />
+                          {progressError}
+                        </p>
+                      )}
 
-                  {progressSuccess && (
-                    <p className="mt-4 rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700">
-                      {progressSuccess}
-                    </p>
+                      {progressSuccess && (
+                        <p
+                          role="status"
+                          className="flex items-start gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm leading-6 text-emerald-700"
+                        >
+                          <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" />
+                          {progressSuccess}
+                        </p>
+                      )}
+                    </div>
                   )}
 
                   {completedCount === totalLessons && totalLessons > 0 && (
-                    <p className="mt-4 rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm font-medium text-green-700">
-                      Congratulations! You have completed all lessons in this course.
-                    </p>
+                    <div className="mx-5 mb-5 flex items-start gap-3 rounded-xl border border-emerald-200 bg-emerald-50 p-4 sm:mx-6">
+                      <Sparkles className="mt-0.5 h-5 w-5 shrink-0 text-emerald-600" />
+                      <p className="text-sm font-semibold leading-6 text-emerald-700">
+                        Congratulations! You have completed all lessons in this course.
+                      </p>
+                    </div>
                   )}
                 </section>
               )}
 
+              {/* Lesson Navigation */}
               <div className="mt-7 flex flex-col-reverse justify-between gap-3 sm:flex-row">
                 <button
                   type="button"
                   onClick={goToPreviousLesson}
                   disabled={selectedLessonIndex <= 0}
-                  className="rounded-xl border border-slate-300 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
+                  className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm font-bold text-slate-700 shadow-sm transition hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-200 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:border-slate-200 disabled:hover:bg-white disabled:hover:text-slate-700"
                 >
-                  ← Previous Lesson
+                  <ArrowLeft className="h-4 w-4" />
+                  Previous Lesson
                 </button>
 
                 <button
@@ -869,26 +1061,30 @@ function StudentLearning() {
                     selectedLessonIndex < 0 ||
                     selectedLessonIndex >= allLessons.length - 1
                   }
-                  className="rounded-xl bg-indigo-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-40"
+                  className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-indigo-600 px-5 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-indigo-700 focus:outline-none focus:ring-4 focus:ring-indigo-200 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-indigo-600"
                 >
-                  Next Lesson →
+                  Next Lesson
+                  <ArrowRight className="h-4 w-4" />
                 </button>
               </div>
 
-              <p className="mt-5 text-center text-xs text-slate-400">
+              <div className="mt-5 flex items-center justify-center gap-2 text-xs font-medium text-slate-400">
+                <BookOpen className="h-3.5 w-3.5" />
                 Lesson {selectedLessonIndex + 1} of {allLessons.length}
-              </p>
+              </div>
             </div>
           ) : (
-            <div className="flex min-h-[400px] items-center justify-center">
+            <div className="flex min-h-[420px] items-center justify-center rounded-2xl border border-dashed border-slate-300 bg-white px-5 py-12">
               <div className="max-w-md text-center">
-                <div className="text-5xl">📖</div>
+                <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-indigo-50 text-indigo-500">
+                  <BookOpen className="h-8 w-8" />
+                </div>
 
-                <h2 className="mt-4 text-xl font-bold text-slate-900">
+                <h2 className="mt-5 text-xl font-extrabold text-slate-900">
                   No Lesson Selected
                 </h2>
 
-                <p className="mt-2 text-sm leading-6 text-slate-500">
+                <p className="mt-2 text-sm leading-7 text-slate-500">
                   {modules.length === 0
                     ? "There are no modules available in this course yet."
                     : "Select a lesson from the course curriculum to begin learning."}

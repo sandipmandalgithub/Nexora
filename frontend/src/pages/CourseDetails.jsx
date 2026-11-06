@@ -2,6 +2,17 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import axios from "axios";
+import {
+  ArrowLeft,
+  BookOpen,
+  BookOpenCheck,
+  CheckCircle2,
+  GraduationCap,
+  Layers3,
+  ShieldCheck,
+  Sparkles,
+  UserRound,
+} from "lucide-react";
 import { API_BASE_URL, getApiError } from "../utils/api";
 
 export default function CourseDetails() {
@@ -114,9 +125,35 @@ export default function CourseDetails() {
 
   if (loading) {
     return (
-      <main className="min-h-screen bg-slate-50 px-4 py-16">
-        <div className="mx-auto max-w-4xl rounded-2xl border border-slate-200 bg-white p-8 text-center text-slate-600">
-          Loading course details...
+      <main
+        className="min-h-screen bg-slate-50 px-4 py-12 sm:px-6 sm:py-16"
+        aria-busy="true"
+      >
+        <div className="mx-auto max-w-6xl animate-pulse">
+          <div className="h-5 w-32 rounded-lg bg-slate-200" />
+
+          <div className="mt-10 max-w-3xl space-y-4">
+            <div className="h-8 w-32 rounded-full bg-slate-200" />
+            <div className="h-10 w-full max-w-xl rounded-xl bg-slate-200" />
+            <div className="h-5 w-48 rounded-lg bg-slate-200" />
+            <div className="h-4 w-full max-w-2xl rounded bg-slate-200" />
+            <div className="h-4 w-4/5 max-w-xl rounded bg-slate-200" />
+          </div>
+
+          <div className="mt-10 grid gap-6 lg:grid-cols-[minmax(0,1fr)_340px]">
+            <div className="space-y-6">
+              <div className="h-64 rounded-2xl border border-slate-200 bg-white" />
+              <div className="h-48 rounded-2xl border border-slate-200 bg-white" />
+            </div>
+            <div className="h-80 rounded-2xl border border-slate-200 bg-white" />
+          </div>
+
+          <p
+            className="mt-6 text-center text-sm font-medium text-slate-500"
+            role="status"
+          >
+            Loading course details...
+          </p>
         </div>
       </main>
     );
@@ -124,18 +161,28 @@ export default function CourseDetails() {
 
   if (error && !course) {
     return (
-      <main className="min-h-screen bg-slate-50 px-4 py-16">
-        <div className="mx-auto max-w-3xl rounded-2xl border border-red-200 bg-white p-8">
-          <h1 className="text-2xl font-black text-slate-900">
+      <main className="flex min-h-screen items-center justify-center bg-slate-50 px-4 py-16">
+        <div className="w-full max-w-lg rounded-3xl border border-slate-200 bg-white p-7 text-center shadow-sm sm:p-10">
+          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-red-50 text-red-600">
+            <BookOpen className="h-8 w-8" aria-hidden="true" />
+          </div>
+
+          <h1 className="mt-6 text-2xl font-black tracking-tight text-slate-900">
             Course unavailable
           </h1>
-          <p role="alert" className="mt-3 text-sm leading-6 text-red-700">
+
+          <p
+            role="alert"
+            className="mt-3 text-sm leading-7 text-red-700"
+          >
             {error}
           </p>
+
           <Link
             to="/courses"
-            className="mt-6 inline-flex rounded-xl bg-indigo-600 px-5 py-3 font-bold text-white hover:bg-indigo-700"
+            className="mt-7 inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-indigo-600 px-6 py-3 text-sm font-bold text-white transition hover:bg-indigo-700 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-indigo-200"
           >
+            <ArrowLeft className="h-4 w-4" aria-hidden="true" />
             Back to courses
           </Link>
         </div>
@@ -145,89 +192,270 @@ export default function CourseDetails() {
 
   return (
     <main className="min-h-screen bg-slate-50">
-      <section className="bg-slate-950 px-4 py-12 text-white sm:px-6 sm:py-16">
-        <div className="mx-auto max-w-5xl">
+      {/* Course Hero */}
+      <section className="relative isolate overflow-hidden bg-slate-950 text-white">
+        <div
+          className="pointer-events-none absolute -right-24 -top-32 h-96 w-96 rounded-full bg-indigo-600/20 blur-3xl"
+          aria-hidden="true"
+        />
+
+        <div
+          className="pointer-events-none absolute -bottom-40 left-1/4 h-80 w-80 rounded-full bg-violet-600/15 blur-3xl"
+          aria-hidden="true"
+        />
+
+        <div className="relative mx-auto max-w-6xl px-4 py-10 sm:px-6 sm:py-16 lg:py-20">
           <Link
             to="/courses"
-            className="text-sm font-semibold text-indigo-300 hover:text-white"
+            className="inline-flex items-center gap-2 rounded-lg text-sm font-semibold text-slate-300 transition hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400 focus-visible:ring-offset-4 focus-visible:ring-offset-slate-950"
           >
-            ← All courses
+            <ArrowLeft className="h-4 w-4" aria-hidden="true" />
+            All courses
           </Link>
 
-          <div className="mt-8">
-            <span className="inline-flex rounded-full bg-indigo-500/15 px-3 py-1 text-sm font-bold text-indigo-200">
+          <div className="mt-9 max-w-3xl">
+            <div className="inline-flex items-center gap-2 rounded-full border border-indigo-400/25 bg-indigo-500/15 px-4 py-2 text-xs font-bold tracking-wide text-indigo-200 sm:text-sm">
+              <GraduationCap className="h-4 w-4" aria-hidden="true" />
               {course.category || "General"}
-            </span>
-            <h1 className="mt-4 break-words text-3xl font-black tracking-tight sm:text-5xl">
+            </div>
+
+            <h1 className="mt-6 break-words text-3xl font-black leading-tight tracking-tight sm:text-4xl lg:text-5xl">
               {course.title}
             </h1>
-            <p className="mt-5 text-sm text-slate-300 sm:text-base">
-              Instructor: {course.instructorName || "Nexora"}
+
+            <p className="mt-5 max-w-2xl whitespace-pre-line break-words text-sm leading-7 text-slate-300 sm:text-base sm:leading-8">
+              {course.description ||
+                "Explore this learning opportunity and start building your knowledge with Nexora."}
             </p>
+
+            <div className="mt-8 flex flex-wrap items-center gap-x-6 gap-y-3">
+              <div className="inline-flex items-center gap-2 text-sm font-medium text-slate-300">
+                <UserRound
+                  className="h-4 w-4 text-indigo-300"
+                  aria-hidden="true"
+                />
+                <span>
+                  Instructor:{" "}
+                  <span className="font-bold text-white">
+                    {course.instructorName || "Nexora"}
+                  </span>
+                </span>
+              </div>
+
+              <div className="inline-flex items-center gap-2 text-sm font-medium text-slate-300">
+                <ShieldCheck
+                  className="h-4 w-4 text-emerald-300"
+                  aria-hidden="true"
+                />
+                Quality learning experience
+              </div>
+            </div>
           </div>
         </div>
       </section>
 
-      <section className="mx-auto grid max-w-5xl gap-6 px-4 py-8 sm:px-6 sm:py-12 lg:grid-cols-[minmax(0,1fr)_300px]">
-        <article className="min-w-0 rounded-2xl border border-slate-200 bg-white p-5 sm:p-8">
-          <h2 className="text-xl font-extrabold text-slate-900">
-            About this course
-          </h2>
-          <p className="mt-4 whitespace-pre-line break-words text-sm leading-8 text-slate-600 sm:text-base">
-            {course.description || "Course description has not been provided yet."}
-          </p>
-        </article>
+      {/* Course Content */}
+      <section className="mx-auto grid max-w-6xl gap-7 px-4 py-8 sm:px-6 sm:py-12 lg:grid-cols-[minmax(0,1fr)_340px] lg:gap-9">
+        <div className="min-w-0 space-y-7">
+          {/* About Course */}
+          <article className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition-shadow hover:shadow-md sm:p-8">
+            <div className="flex items-start gap-4">
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600">
+                <BookOpen className="h-6 w-6" aria-hidden="true" />
+              </div>
 
-        <aside className="h-fit rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
-          <div className="text-3xl" aria-hidden="true">
-            📚
+              <div className="min-w-0">
+                <h2 className="text-xl font-extrabold tracking-tight text-slate-900 sm:text-2xl">
+                  About this course
+                </h2>
+                <p className="mt-1 text-sm text-slate-500">
+                  Get to know what this course is about.
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-7 border-t border-slate-100 pt-6">
+              <p className="whitespace-pre-line break-words text-sm leading-8 text-slate-600 sm:text-base">
+                {course.description ||
+                  "Course description has not been provided yet."}
+              </p>
+            </div>
+          </article>
+
+          {/* Learning Experience */}
+          <article className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition-shadow hover:shadow-md sm:p-8">
+            <div className="flex items-start gap-4">
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-violet-50 text-violet-600">
+                <Layers3 className="h-6 w-6" aria-hidden="true" />
+              </div>
+
+              <div className="min-w-0">
+                <h2 className="text-lg font-extrabold text-slate-900 sm:text-xl">
+                  Your learning journey
+                </h2>
+                <p className="mt-2 text-sm leading-7 text-slate-600">
+                  Enroll in this course to access your learning experience
+                  through the Nexora student dashboard.
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-6 grid gap-3 sm:grid-cols-2">
+              <div className="flex items-center gap-3 rounded-xl bg-slate-50 p-4">
+                <BookOpenCheck
+                  className="h-5 w-5 shrink-0 text-indigo-600"
+                  aria-hidden="true"
+                />
+                <span className="text-sm font-semibold text-slate-700">
+                  Organized learning
+                </span>
+              </div>
+
+              <div className="flex items-center gap-3 rounded-xl bg-slate-50 p-4">
+                <GraduationCap
+                  className="h-5 w-5 shrink-0 text-indigo-600"
+                  aria-hidden="true"
+                />
+                <span className="text-sm font-semibold text-slate-700">
+                  Student dashboard access
+                </span>
+              </div>
+            </div>
+          </article>
+        </div>
+
+        {/* Enrollment Card */}
+        <aside className="h-fit lg:sticky lg:top-8">
+          <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-lg shadow-slate-200/50">
+            <div className="relative overflow-hidden bg-gradient-to-br from-indigo-600 to-violet-700 p-6 text-white sm:p-7">
+              <div
+                className="pointer-events-none absolute -right-10 -top-10 h-36 w-36 rounded-full border-[24px] border-white/10"
+                aria-hidden="true"
+              />
+
+              <div className="relative">
+                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-white/15">
+                  <Sparkles className="h-6 w-6" aria-hidden="true" />
+                </div>
+
+                <h2 className="mt-5 text-xl font-black tracking-tight">
+                  Start learning today
+                </h2>
+
+                <p className="mt-2 text-sm leading-6 text-indigo-100">
+                  Take the next step in your learning journey with Nexora.
+                </p>
+              </div>
+            </div>
+
+            <div className="p-6 sm:p-7">
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600">
+                  <GraduationCap className="h-5 w-5" aria-hidden="true" />
+                </div>
+
+                <div className="min-w-0">
+                  <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+                    Course category
+                  </p>
+                  <p className="mt-1 truncate text-sm font-bold text-slate-900">
+                    {course.category || "General"}
+                  </p>
+                </div>
+              </div>
+
+              <div className="mt-5 flex items-center gap-3 border-t border-slate-100 pt-5">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-600">
+                  <UserRound className="h-5 w-5" aria-hidden="true" />
+                </div>
+
+                <div className="min-w-0">
+                  <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+                    Instructor
+                  </p>
+                  <p className="mt-1 truncate text-sm font-bold text-slate-900">
+                    {course.instructorName || "Nexora"}
+                  </p>
+                </div>
+              </div>
+
+              {error && (
+                <p
+                  role="alert"
+                  className="mt-5 rounded-xl border border-red-100 bg-red-50 p-3 text-sm leading-6 text-red-700"
+                >
+                  {error}
+                </p>
+              )}
+
+              {message && (
+                <p
+                  role="status"
+                  className="mt-5 flex items-start gap-2 rounded-xl border border-emerald-100 bg-emerald-50 p-3 text-sm leading-6 text-emerald-700"
+                >
+                  <CheckCircle2
+                    className="mt-0.5 h-4 w-4 shrink-0"
+                    aria-hidden="true"
+                  />
+                  <span>{message}</span>
+                </p>
+              )}
+
+              {enrolled ? (
+                <Link
+                  to="/dashboard"
+                  className="mt-6 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-3 text-center text-sm font-bold text-white shadow-sm transition hover:bg-emerald-700 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-emerald-200"
+                >
+                  <CheckCircle2 className="h-5 w-5" aria-hidden="true" />
+                  Go to My Courses
+                </Link>
+              ) : (
+                <button
+                  type="button"
+                  onClick={handleEnroll}
+                  disabled={enrolling}
+                  aria-busy={enrolling}
+                  className="mt-6 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-indigo-700 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-indigo-200 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {enrolling ? (
+                    <>
+                      <span
+                        className="h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white"
+                        aria-hidden="true"
+                      />
+                      Enrolling...
+                    </>
+                  ) : (
+                    <>
+                      <GraduationCap
+                        className="h-5 w-5"
+                        aria-hidden="true"
+                      />
+                      Enroll Now
+                    </>
+                  )}
+                </button>
+              )}
+
+              <div className="mt-5 flex items-start justify-center gap-2 text-center">
+                <ShieldCheck
+                  className="mt-0.5 h-4 w-4 shrink-0 text-slate-400"
+                  aria-hidden="true"
+                />
+                <p className="text-xs leading-5 text-slate-500">
+                  Sign in is required to enroll in this course.
+                </p>
+              </div>
+            </div>
           </div>
-          <h2 className="mt-3 text-xl font-extrabold text-slate-900">
-            Start learning
-          </h2>
-          <p className="mt-2 text-sm leading-6 text-slate-600">
-            Enroll in this course to add it to your learning dashboard.
-          </p>
 
-          {error && (
-            <p
-              role="alert"
-              className="mt-4 rounded-xl bg-red-50 p-3 text-sm leading-6 text-red-700"
-            >
-              {error}
-            </p>
-          )}
-
-          {message && (
-            <p
-              role="status"
-              className="mt-4 rounded-xl bg-emerald-50 p-3 text-sm leading-6 text-emerald-700"
-            >
-              {message}
-            </p>
-          )}
-
-          {enrolled ? (
-            <Link
-              to="/dashboard"
-              className="mt-5 inline-flex min-h-12 w-full items-center justify-center rounded-xl bg-emerald-600 px-4 py-3 text-center font-bold text-white hover:bg-emerald-700"
-            >
-              Go to My Courses
-            </Link>
-          ) : (
-            <button
-              type="button"
-              onClick={handleEnroll}
-              disabled={enrolling}
-              className="mt-5 inline-flex min-h-12 w-full items-center justify-center rounded-xl bg-indigo-600 px-4 py-3 font-bold text-white transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              {enrolling ? "Enrolling..." : "Enroll Now"}
-            </button>
-          )}
-
-          <p className="mt-4 text-center text-xs leading-5 text-slate-500">
-            Sign in is required to enroll.
-          </p>
+          <Link
+            to="/courses"
+            className="mt-4 flex min-h-11 items-center justify-center gap-2 rounded-lg py-3 text-sm font-semibold text-slate-500 transition hover:text-indigo-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2"
+          >
+            <ArrowLeft className="h-4 w-4" aria-hidden="true" />
+            Explore other courses
+          </Link>
         </aside>
       </section>
     </main>

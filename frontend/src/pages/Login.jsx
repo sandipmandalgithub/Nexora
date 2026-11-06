@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
@@ -90,7 +89,11 @@ export default function Login() {
     >
       <AlertMessage message={error} />
 
-      <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5">
+      <form
+        onSubmit={handleSubmit}
+        aria-busy={loading}
+        className="space-y-4 sm:space-y-5"
+      >
         <FormField
           label="Email address"
           name="email"
@@ -125,8 +128,9 @@ export default function Login() {
             <button
               type="button"
               onClick={() => setShowPassword((previous) => !previous)}
-              className="absolute inset-y-0 right-2 my-auto rounded-md px-2 text-xs font-bold text-indigo-600 hover:text-indigo-800 sm:right-3"
+              className="absolute inset-y-0 right-2 my-auto rounded-md px-2 text-xs font-bold text-indigo-600 transition hover:text-indigo-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 sm:right-3"
               aria-label={showPassword ? "Hide password" : "Show password"}
+              aria-pressed={showPassword}
             >
               {showPassword ? "Hide" : "Show"}
             </button>
@@ -136,18 +140,48 @@ export default function Login() {
         <button
           type="submit"
           disabled={loading}
-          className="flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 py-3 text-sm font-bold text-white shadow-lg shadow-indigo-600/20 transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-60 sm:px-5 sm:text-base"
+          className="flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 py-3 text-sm font-bold text-white shadow-lg shadow-indigo-600/20 transition hover:bg-indigo-700 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-indigo-500/30 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60 sm:px-5 sm:text-base"
         >
-          {loading ? "Signing in..." : "Sign in to Nexora"}
-          {!loading && <span aria-hidden="true">→</span>}
+          {loading ? (
+            <>
+              <svg
+                aria-hidden="true"
+                className="h-4 w-4 animate-spin"
+                viewBox="0 0 24 24"
+                fill="none"
+              >
+                <circle
+                  className="opacity-25"
+                  cx="12"
+                  cy="12"
+                  r="10"
+                  stroke="currentColor"
+                  strokeWidth="4"
+                />
+                <path
+                  className="opacity-90"
+                  fill="currentColor"
+                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+                />
+              </svg>
+              <span>Signing in...</span>
+            </>
+          ) : (
+            <>
+              <span>Sign in to Nexora</span>
+              <span aria-hidden="true">→</span>
+            </>
+          )}
         </button>
       </form>
 
       <div className="my-5 flex min-w-0 items-center gap-2 sm:my-6 sm:gap-3">
         <div className="h-px min-w-0 flex-1 bg-slate-200" />
+
         <span className="shrink-0 text-center text-[10px] font-medium tracking-wide text-slate-400 sm:text-xs">
           NEW TO NEXORA?
         </span>
+
         <div className="h-px min-w-0 flex-1 bg-slate-200" />
       </div>
 
@@ -155,7 +189,7 @@ export default function Login() {
         Don't have an account?{" "}
         <Link
           to="/register"
-          className="font-extrabold text-indigo-600 hover:text-indigo-800"
+          className="rounded-sm font-extrabold text-indigo-600 transition hover:text-indigo-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2"
         >
           Create account
         </Link>
@@ -163,7 +197,7 @@ export default function Login() {
 
       <Link
         to="/"
-        className="mt-4 block text-center text-sm font-semibold text-slate-500 transition hover:text-indigo-600"
+        className="mt-4 block rounded-sm text-center text-sm font-semibold text-slate-500 transition hover:text-indigo-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2"
       >
         ← Back to home
       </Link>

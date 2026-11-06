@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
@@ -21,6 +20,7 @@ export default function Register() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   function handleChange(event) {
     const { name, value } = event.target;
@@ -83,7 +83,11 @@ export default function Register() {
     >
       <AlertMessage message={error} />
 
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form
+        onSubmit={handleSubmit}
+        aria-busy={loading}
+        className="space-y-4"
+      >
         <FormField
           label="Full name"
           name="fullName"
@@ -128,8 +132,9 @@ export default function Register() {
             <button
               type="button"
               onClick={() => setShowPassword((previous) => !previous)}
-              className="absolute inset-y-0 right-2 my-auto rounded-md px-2 text-xs font-bold text-indigo-600 hover:text-indigo-800 sm:right-3"
+              className="absolute inset-y-0 right-2 my-auto rounded-md px-2 text-xs font-bold text-indigo-600 transition hover:text-indigo-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 sm:right-3"
               aria-label={showPassword ? "Hide password" : "Show password"}
+              aria-pressed={showPassword}
             >
               {showPassword ? "Hide" : "Show"}
             </button>
@@ -141,23 +146,80 @@ export default function Register() {
           </p>
         </div>
 
-        <FormField
-          label="Confirm password"
-          name="confirmPassword"
-          type="password"
-          value={form.confirmPassword}
-          onChange={handleChange}
-          placeholder="Enter your password again"
-          autoComplete="new-password"
-        />
+        <div className="min-w-0">
+          <label
+            htmlFor="register-confirm-password"
+            className="mb-2 block text-sm font-bold text-slate-700"
+          >
+            Confirm password
+          </label>
+
+          <div className="relative min-w-0">
+            <input
+              id="register-confirm-password"
+              name="confirmPassword"
+              type={showConfirmPassword ? "text" : "password"}
+              value={form.confirmPassword}
+              onChange={handleChange}
+              placeholder="Enter your password again"
+              autoComplete="new-password"
+              required
+              className="min-h-12 w-full min-w-0 rounded-xl border border-slate-200 bg-white px-3 py-3 pr-20 text-base text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 sm:px-4"
+            />
+
+            <button
+              type="button"
+              onClick={() =>
+                setShowConfirmPassword((previous) => !previous)
+              }
+              className="absolute inset-y-0 right-2 my-auto rounded-md px-2 text-xs font-bold text-indigo-600 transition hover:text-indigo-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 sm:right-3"
+              aria-label={
+                showConfirmPassword
+                  ? "Hide confirm password"
+                  : "Show confirm password"
+              }
+              aria-pressed={showConfirmPassword}
+            >
+              {showConfirmPassword ? "Hide" : "Show"}
+            </button>
+          </div>
+        </div>
 
         <button
           type="submit"
           disabled={loading}
-          className="flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 py-3 text-sm font-bold text-white shadow-lg shadow-indigo-600/20 transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-60 sm:px-5 sm:text-base"
+          className="flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 py-3 text-sm font-bold text-white shadow-lg shadow-indigo-600/20 transition hover:bg-indigo-700 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-indigo-500/30 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60 sm:px-5 sm:text-base"
         >
-          {loading ? "Creating account..." : "Create account"}
-          {!loading && <span aria-hidden="true">→</span>}
+          {loading ? (
+            <>
+              <svg
+                aria-hidden="true"
+                className="h-4 w-4 animate-spin"
+                viewBox="0 0 24 24"
+                fill="none"
+              >
+                <circle
+                  className="opacity-25"
+                  cx="12"
+                  cy="12"
+                  r="10"
+                  stroke="currentColor"
+                  strokeWidth="4"
+                />
+                <path
+                  className="opacity-90"
+                  fill="currentColor"
+                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+                />
+              </svg>
+              <span>Creating account...</span>
+            </>
+          ) : (
+            <>
+              <span>Create account</span>
+              <span aria-hidden="true">→</span>
+            </>
+          )}
         </button>
       </form>
 
@@ -165,7 +227,7 @@ export default function Register() {
         Already have an account?{" "}
         <Link
           to="/login"
-          className="font-extrabold text-indigo-600 hover:text-indigo-800"
+          className="rounded-sm font-extrabold text-indigo-600 transition hover:text-indigo-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2"
         >
           Sign in
         </Link>
@@ -173,7 +235,7 @@ export default function Register() {
 
       <Link
         to="/"
-        className="mt-4 block text-center text-sm font-semibold text-slate-500 transition hover:text-indigo-600"
+        className="mt-4 block rounded-sm text-center text-sm font-semibold text-slate-500 transition hover:text-indigo-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2"
       >
         ← Back to home
       </Link>
