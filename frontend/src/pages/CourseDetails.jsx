@@ -12,8 +12,137 @@ import {
   ShieldCheck,
   Sparkles,
   UserRound,
+  Code2,
+  Database,
+  Brain,
+  Globe,
+  Briefcase,
+  Palette,
+  Calculator,
 } from "lucide-react";
 import { API_BASE_URL, getApiError } from "../utils/api";
+
+// Isolated Axios client for course and enrollment requests.
+const courseApi = axios.create();
+
+function getCourseIcon(course) {
+  const value = `${course.category || ""} ${course.title || ""}`.toLowerCase();
+
+  if (
+    value.includes("database") ||
+    value.includes("sql") ||
+    value.includes("mysql") ||
+    value.includes("oracle") ||
+    value.includes("mongodb")
+  ) {
+    return Database;
+  }
+
+  if (
+    value.includes("ai") ||
+    value.includes("artificial intelligence") ||
+    value.includes("machine learning") ||
+    value.includes("data science")
+  ) {
+    return Brain;
+  }
+
+  if (
+    value.includes("cloud") ||
+    value.includes("aws") ||
+    value.includes("devops")
+  ) {
+    return Globe;
+  }
+
+  if (
+    value.includes("business") ||
+    value.includes("management") ||
+    value.includes("finance") ||
+    value.includes("marketing")
+  ) {
+    return Briefcase;
+  }
+
+  if (
+    value.includes("design") ||
+    value.includes("creative") ||
+    value.includes("art")
+  ) {
+    return Palette;
+  }
+
+  if (
+    value.includes("math") ||
+    value.includes("calculation") ||
+    value.includes("statistics")
+  ) {
+    return Calculator;
+  }
+
+  if (
+    value.includes("java") ||
+    value.includes("programming") ||
+    value.includes("coding") ||
+    value.includes("development") ||
+    value.includes("software") ||
+    value.includes("react") ||
+    value.includes("web")
+  ) {
+    return Code2;
+  }
+
+  return BookOpen;
+}
+
+function CourseCoverImage({ course }) {
+  const [imageError, setImageError] = useState(false);
+
+  const imageUrl = course.imageUrl?.trim();
+
+  return (
+    <div className="relative aspect-video w-full overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-br from-indigo-950 via-indigo-800 to-violet-700 shadow-2xl shadow-black/20">
+      {imageUrl && !imageError ? (
+        <img
+          src={imageUrl}
+          alt={`${course.title || "Course"} course cover`}
+          className="h-full w-full object-cover"
+          onError={() => setImageError(true)}
+        />
+      ) : (
+        <>
+          <div className="absolute -right-16 -top-24 h-72 w-72 rounded-full bg-white/10 blur-3xl" />
+          <div className="absolute -bottom-24 -left-16 h-72 w-72 rounded-full bg-violet-400/20 blur-3xl" />
+
+          <div className="relative flex h-full flex-col items-center justify-center gap-4 px-5 text-center">
+            <div className="flex h-20 w-20 items-center justify-center rounded-3xl border border-white/20 bg-white/10 text-white shadow-xl backdrop-blur-sm sm:h-24 sm:w-24">
+              {(() => {
+                const Icon = getCourseIcon(course);
+
+                return (
+                  <Icon
+                    className="h-10 w-10 sm:h-12 sm:w-12"
+                    strokeWidth={1.4}
+                    aria-hidden="true"
+                  />
+                );
+              })()}
+            </div>
+
+            <div>
+              <p className="text-xs font-bold uppercase tracking-[0.25em] text-indigo-200">
+                Nexora Learning
+              </p>
+              <p className="mt-2 line-clamp-2 text-lg font-extrabold text-white sm:text-2xl">
+                {course.category || "Explore & Learn"}
+              </p>
+            </div>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
 
 export default function CourseDetails() {
   const { id } = useParams();
@@ -38,13 +167,13 @@ export default function CourseDetails() {
         const token = localStorage.getItem("nexoraToken");
 
         const [courseResponse, enrollmentResponse] = await Promise.all([
-          axios.get(`${API_BASE_URL}/courses/${id}`, {
+          courseApi.get(`${API_BASE_URL}/courses/${id}`, {
             headers: token
               ? { Authorization: `Bearer ${token}` }
               : {},
           }),
           token
-            ? axios.get(`${API_BASE_URL}/enrollments/my`, {
+            ? courseApi.get(`${API_BASE_URL}/enrollments/my`, {
                 headers: { Authorization: `Bearer ${token}` },
               })
             : Promise.resolve({ data: [] }),
@@ -89,12 +218,33 @@ export default function CourseDetails() {
   }, [id]);
 
   async function handleEnroll() {
-    const token = localStorage.getItem("nexoraToken");
+    // Read the latest session values at click time.
+    const token = localStorage.getItem("nexoraToken")?.trim();
 
-    if (!token) {
+    const storedUser = (() => {
+      try {
+        return JSON.parse(localStorage.getItem("nexoraUser") || "null");
+      } catch {
+        return null;
+      }
+    })();
+
+    // Check for a missing or placeholder token.
+    if (!token || ["null", "undefined"].includes(token.toLowerCase())) {
       navigate("/login", {
         state: { from: `/courses/${id}` },
       });
+      return;
+    }
+
+    // Only student accounts can enroll.
+    if (storedUser?.role && storedUser.role.toUpperCase() !== "STUDENT") {
+      setError("Only student accounts can enroll in a course.");
+      return;
+    }
+
+    if (!course?.id) {
+      setError("Course details are still loading. Please try again.");
       return;
     }
 
@@ -103,18 +253,34 @@ export default function CourseDetails() {
     setMessage("");
 
     try {
-      await axios.post(
+      await courseApi.post(
         `${API_BASE_URL}/enrollments/${course.id}`,
         {},
-        { headers: { Authorization: `Bearer ${token}` } }
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
       );
 
       setEnrolled(true);
-      setMessage("Enrollment successful! Your course is now in My Courses.");
+      setMessage(
+        "Enrollment successful! Your course is now in My Courses."
+      );
     } catch (err) {
-      if (err.response?.status === 409) {
+      const status = err.response?.status;
+
+      if (status === 409) {
         setEnrolled(true);
         setMessage("You are already enrolled in this course.");
+      } else if (status === 401) {
+        setError(
+          "Your session is invalid or expired. Please sign in again, then retry enrollment."
+        );
+      } else if (status === 403) {
+        setError(
+          "Your account does not have permission to enroll. Please sign in with a student account."
+        );
       } else {
         setError(getApiError(err));
       }
@@ -252,6 +418,11 @@ export default function CourseDetails() {
             </div>
           </div>
         </div>
+      </section>
+
+      {/* Course Cover Image */}
+      <section className="mx-auto max-w-6xl px-4 pt-8 sm:px-6 sm:pt-10">
+        <CourseCoverImage course={course} />
       </section>
 
       {/* Course Content */}

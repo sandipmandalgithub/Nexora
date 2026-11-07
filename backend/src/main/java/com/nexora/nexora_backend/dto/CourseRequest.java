@@ -6,6 +6,7 @@ public class CourseRequest {
     private String description;
     private String category;
     private String instructorName;
+    private String imageUrl;
     private Boolean published = true;
 
     public CourseRequest() {
@@ -41,6 +42,14 @@ public class CourseRequest {
 
     public void setInstructorName(String instructorName) {
         this.instructorName = instructorName;
+    }
+
+    public String getImageUrl() {
+        return imageUrl;
+    }
+
+    public void setImageUrl(String imageUrl) {
+        this.imageUrl = imageUrl;
     }
 
     public Boolean getPublished() {

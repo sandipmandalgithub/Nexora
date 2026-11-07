@@ -55,6 +55,7 @@ public class EnrollmentController {
         );
     }
 
+    // Student can cancel only their own enrollment.
     @DeleteMapping("/{enrollmentId}")
     public ResponseEntity<Void> cancelEnrollment(
             @PathVariable Long enrollmentId,
@@ -64,6 +65,16 @@ public class EnrollmentController {
             enrollmentId,
             authentication.getName()
         );
+
+        return ResponseEntity.noContent().build();
+    }
+
+    // Admin can remove any student's enrollment.
+    @DeleteMapping("/admin/{enrollmentId}")
+    public ResponseEntity<Void> deleteEnrollmentAsAdmin(
+            @PathVariable Long enrollmentId) {
+
+        enrollmentService.deleteEnrollmentAsAdmin(enrollmentId);
 
         return ResponseEntity.noContent().build();
     }

@@ -31,6 +31,9 @@ public class Course {
     @Column(nullable = false, length = 100)
     private String instructorName;
 
+    @Column(length = 1000)
+    private String imageUrl;
+
     @Column(nullable = false)
     private Boolean published = true;
 
@@ -110,6 +113,14 @@ public class Course {
 
     public void setInstructorName(String instructorName) {
         this.instructorName = instructorName;
+    }
+
+    public String getImageUrl() {
+        return imageUrl;
+    }
+
+    public void setImageUrl(String imageUrl) {
+        this.imageUrl = imageUrl;
     }
 
     public Boolean getPublished() {

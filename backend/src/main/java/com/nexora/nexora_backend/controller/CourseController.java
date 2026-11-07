@@ -78,6 +78,7 @@ public class CourseController {
             request.getDescription(),
             request.getCategory(),
             request.getInstructorName(),
+            request.getImageUrl(),
             request.getPublished()
         );
 
@@ -98,6 +99,7 @@ public class CourseController {
             request.getDescription(),
             request.getCategory(),
             request.getInstructorName(),
+            request.getImageUrl(),
             request.getPublished()
         );
 

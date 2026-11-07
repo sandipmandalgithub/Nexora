@@ -2,6 +2,7 @@
 import { Navigate } from "react-router-dom";
 
 import AdminCourseManagement from "../components/AdminCourseManagement";
+import AdminEnrollmentManagement from "../components/AdminEnrollmentManagement";
 import AdminExamManagement from "../components/AdminExamManagement";
 import AdminQuestionManagement from "../components/AdminQuestionManagement";
 import AdminDetailedResults from "../components/AdminDetailedResults";
@@ -30,7 +31,6 @@ export default function Dashboard() {
         <section className="min-w-0 space-y-8">
           {/* Admin Welcome Banner */}
           <div className="relative isolate overflow-hidden rounded-2xl bg-gradient-to-br from-slate-950 via-slate-900 to-indigo-950 p-5 text-white shadow-lg shadow-slate-900/10 sm:rounded-3xl sm:p-8 lg:p-9">
-            {/* Decorative Background */}
             <div
               aria-hidden="true"
               className="pointer-events-none absolute -right-16 -top-24 -z-10 h-72 w-72 rounded-full bg-indigo-500/15 blur-3xl"
@@ -56,9 +56,9 @@ export default function Dashboard() {
                 </h1>
 
                 <p className="mt-3 max-w-2xl text-sm leading-7 text-slate-300 sm:text-base">
-                  Manage courses, examinations, question content, and student
-                  academic results from your centralized learning management
-                  workspace.
+                  Manage courses, examinations, question content, student
+                  enrollments, and academic results from your centralized
+                  learning management workspace.
                 </p>
               </div>
 
@@ -87,6 +87,11 @@ export default function Dashboard() {
           {/* Course Management */}
           <section className="min-w-0" aria-label="Course management">
             <AdminCourseManagement />
+          </section>
+
+          {/* Enrollment Management */}
+          <section className="min-w-0" aria-label="Enrollment management">
+            <AdminEnrollmentManagement />
           </section>
 
           {/* Exam Management */}

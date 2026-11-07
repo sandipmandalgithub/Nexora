@@ -8,6 +8,7 @@ const EMPTY_FORM = {
   description: "",
   category: "",
   instructorName: "",
+  imageUrl: "",
   published: true,
 };
 
@@ -336,6 +337,7 @@ function AdminCourseManagement() {
       description: course.description || "",
       category: course.category || "",
       instructorName: course.instructorName || "",
+      imageUrl: course.imageUrl || "",
       published: Boolean(course.published),
     });
 
@@ -361,6 +363,7 @@ function AdminCourseManagement() {
         description: form.description.trim(),
         category: form.category.trim(),
         instructorName: form.instructorName.trim(),
+        imageUrl: form.imageUrl.trim(),
         published: form.published,
       };
 
@@ -420,6 +423,7 @@ function AdminCourseManagement() {
         description: course.description || "",
         category: course.category || "",
         instructorName: course.instructorName || "",
+        imageUrl: course.imageUrl || "",
         published: !course.published,
       };
 
@@ -1177,6 +1181,52 @@ function AdminCourseManagement() {
                 placeholder="e.g. Nexora Team"
                 className={inputClass}
               />
+            </div>
+
+            <div className="sm:col-span-2">
+              <label htmlFor="course-image-url" className={labelClass}>
+                Course image URL <span className="text-xs font-normal text-slate-400">(Optional)</span>
+              </label>
+              <input
+                id="course-image-url"
+                name="imageUrl"
+                type="url"
+                value={form.imageUrl}
+                onChange={handleChange}
+                maxLength={1000}
+                placeholder="https://example.com/course-image.jpg"
+                className={inputClass}
+                aria-describedby="course-image-help"
+              />
+              <p id="course-image-help" className="mt-1.5 text-xs leading-5 text-slate-500">
+                Add a publicly accessible image URL. A landscape image with a 16:9 ratio works best.
+              </p>
+
+              {form.imageUrl.trim() && (
+                <div className="mt-4 overflow-hidden rounded-2xl border border-slate-200 bg-slate-50">
+                  <div className="flex items-center justify-between gap-3 border-b border-slate-200 px-4 py-3">
+                    <span className="text-sm font-semibold text-slate-700">Image preview</span>
+                    <button
+                      type="button"
+                      onClick={() => setForm((previous) => ({ ...previous, imageUrl: "" }))}
+                      className="rounded-lg px-3 py-1.5 text-xs font-semibold text-red-600 transition hover:bg-red-50"
+                    >
+                      Remove image
+                    </button>
+                  </div>
+                  <img
+                    src={form.imageUrl.trim()}
+                    alt="Course cover preview"
+                    className="aspect-video max-h-64 w-full bg-slate-100 object-cover"
+                    onError={(event) => {
+                      event.currentTarget.style.display = "none";
+                    }}
+                    onLoad={(event) => {
+                      event.currentTarget.style.display = "block";
+                    }}
+                  />
+                </div>
+              )}
             </div>
 
             <div className="sm:col-span-2">

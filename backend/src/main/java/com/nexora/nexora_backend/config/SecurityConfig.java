@@ -111,6 +111,13 @@ public class SecurityConfig {
                     "/api/enrollments/**"
                 ).hasRole("STUDENT")
 
+                // Admin enrollment deletion - must be before Student matcher
+                .requestMatchers(
+                    HttpMethod.DELETE,
+                    "/api/enrollments/admin/**"
+                ).hasRole("ADMIN")
+
+                // Student can delete only their own enrollment
                 .requestMatchers(
                     HttpMethod.DELETE,
                     "/api/enrollments/**"

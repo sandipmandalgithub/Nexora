@@ -50,24 +50,6 @@ const learningTopics = [
     icon: "📊",
     accent: "bg-emerald-50 text-emerald-600",
   },
-  {
-    name: "Database & Cloud Computing",
-    lessons: "SQL, Databases & Cloud Fundamentals",
-    icon: "☁️",
-    accent: "bg-blue-50 text-blue-600",
-  },
-  {
-    name: "AI & Machine Learning",
-    lessons: "AI Concepts & Intelligent Systems",
-    icon: "🤖",
-    accent: "bg-fuchsia-50 text-fuchsia-600",
-  },
-  {
-    name: "Mobile App Development",
-    lessons: "Android, Flutter & Cross-platform Apps",
-    icon: "📱",
-    accent: "bg-orange-50 text-orange-600",
-  },
 ];
 
 function Brand({ light = false }) {
@@ -682,7 +664,19 @@ function FeaturedCourses() {
                     📘
                   </div>
 
-                  <span className="absolute right-4 top-4 rounded-full border border-white/80 bg-white/90 px-3 py-1 text-xs font-bold text-emerald-700 shadow-sm">
+                  {course.imageUrl && (
+                    <img
+                      src={course.imageUrl}
+                      alt={`${course.title || "Course"} course`}
+                      loading="lazy"
+                      className="absolute inset-0 z-10 h-full w-full object-cover transition duration-500 group-hover:scale-105"
+                      onError={(event) => {
+                        event.currentTarget.style.display = "none";
+                      }}
+                    />
+                  )}
+
+                  <span className="absolute right-4 top-4 z-20 rounded-full border border-white/80 bg-white/90 px-3 py-1 text-xs font-bold text-emerald-700 shadow-sm">
                     Published
                   </span>
                 </div>

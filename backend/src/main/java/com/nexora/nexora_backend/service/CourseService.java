@@ -67,6 +67,7 @@ public class CourseService {
             String description,
             String category,
             String instructorName,
+            String imageUrl,
             Boolean published) {
 
         Course course = new Course();
@@ -77,6 +78,7 @@ public class CourseService {
             description,
             category,
             instructorName,
+            imageUrl,
             published
         );
 
@@ -91,6 +93,7 @@ public class CourseService {
             String description,
             String category,
             String instructorName,
+            String imageUrl,
             Boolean published) {
 
         Course course = courseRepository.findById(id)
@@ -112,6 +115,7 @@ public class CourseService {
             description,
             category,
             instructorName,
+            imageUrl,
             published
         );
 
@@ -157,6 +161,7 @@ public class CourseService {
             String description,
             String category,
             String instructorName,
+            String imageUrl,
             Boolean published) {
 
         course.setTitle(requireText(title, "Title", 150));
@@ -165,6 +170,8 @@ public class CourseService {
         course.setInstructorName(
             requireText(instructorName, "Instructor name", 100)
         );
+
+        course.setImageUrl(requireOptionalText(imageUrl, "Image URL", 1000));
 
         course.setPublished(published == null ? Boolean.TRUE : published);
     }
@@ -176,6 +183,27 @@ public class CourseService {
                 HttpStatus.BAD_REQUEST,
                 field + " is required"
             );
+        }
+
+        String trimmed = value.trim();
+
+        if (trimmed.length() > maxLength) {
+            throw new ResponseStatusException(
+                HttpStatus.BAD_REQUEST,
+                field + " must not exceed " + maxLength + " characters"
+            );
+        }
+
+        return trimmed;
+    }
+
+    private String requireOptionalText(
+            String value,
+            String field,
+            int maxLength) {
+
+        if (value == null || value.isBlank()) {
+            return null;
         }
 
         String trimmed = value.trim();

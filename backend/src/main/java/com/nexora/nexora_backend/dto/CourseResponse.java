@@ -11,6 +11,7 @@ public class CourseResponse {
     private String description;
     private String category;
     private String instructorName;
+    private String imageUrl;
     private Boolean published;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
@@ -21,6 +22,7 @@ public class CourseResponse {
         this.description = course.getDescription();
         this.category = course.getCategory();
         this.instructorName = course.getInstructorName();
+        this.imageUrl = course.getImageUrl();
         this.published = course.getPublished();
         this.createdAt = course.getCreatedAt();
         this.updatedAt = course.getUpdatedAt();
@@ -44,6 +46,10 @@ public class CourseResponse {
 
     public String getInstructorName() {
         return instructorName;
+    }
+
+    public String getImageUrl() {
+        return imageUrl;
     }
 
     public Boolean getPublished() {

@@ -1,3 +1,4 @@
+
 package com.nexora.nexora_backend.service;
 
 import java.util.List;
@@ -46,7 +47,6 @@ public class EnrollmentService {
                 "Course not found"
             ));
 
-        // Students cannot enroll in unpublished or archived courses.
         if (!Boolean.TRUE.equals(course.getPublished())
                 || Boolean.TRUE.equals(course.getArchived())) {
 
@@ -99,10 +99,24 @@ public class EnrollmentService {
             .toList();
     }
 
+    // Student can delete only their own enrollment.
     public void cancelEnrollment(Long enrollmentId, String email) {
 
         Enrollment enrollment = enrollmentRepository
             .findByIdAndStudent_Email(enrollmentId, email)
+            .orElseThrow(() -> new ResponseStatusException(
+                HttpStatus.NOT_FOUND,
+                "Enrollment not found"
+            ));
+
+        enrollmentRepository.delete(enrollment);
+    }
+
+    // Admin can delete any enrollment.
+    public void deleteEnrollmentAsAdmin(Long enrollmentId) {
+
+        Enrollment enrollment = enrollmentRepository
+            .findById(enrollmentId)
             .orElseThrow(() -> new ResponseStatusException(
                 HttpStatus.NOT_FOUND,
                 "Enrollment not found"

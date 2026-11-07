@@ -1,3 +1,4 @@
+
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import axios from "axios";
@@ -111,26 +112,68 @@ function getCourseIcon(course) {
   return BookOpen;
 }
 
+function CourseImage({ course, CourseIcon }) {
+  const [imageError, setImageError] = useState(false);
+
+  const imageUrl = course.imageUrl?.trim();
+
+  return (
+    <div className="relative aspect-video w-full overflow-hidden bg-gradient-to-br from-indigo-950 via-indigo-800 to-violet-700">
+      {imageUrl && !imageError ? (
+        <img
+          src={imageUrl}
+          alt={`${course.title || "Course"} course cover`}
+          loading="lazy"
+          className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
+          onError={() => setImageError(true)}
+        />
+      ) : (
+        <div
+          className="flex h-full w-full items-center justify-center overflow-hidden"
+          role="img"
+          aria-label={`${course.title || "Course"} placeholder image`}
+        >
+          <div className="absolute -right-10 -top-16 h-48 w-48 rounded-full bg-white/10 blur-2xl" />
+          <div className="absolute -bottom-20 -left-10 h-48 w-48 rounded-full bg-violet-400/20 blur-2xl" />
+
+          <div className="relative flex flex-col items-center gap-3 px-5 text-center">
+            <div className="flex h-16 w-16 items-center justify-center rounded-2xl border border-white/20 bg-white/10 text-white shadow-lg backdrop-blur-sm">
+              <CourseIcon size={34} strokeWidth={1.5} aria-hidden="true" />
+            </div>
+
+            <span className="line-clamp-1 max-w-full text-sm font-bold tracking-wide text-white/90">
+              {course.category || "Nexora Learning"}
+            </span>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function CourseCardSkeleton() {
   return (
-    <div className="flex min-w-0 flex-col rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
-      <div className="flex items-start justify-between gap-3">
-        <div className="h-6 w-24 animate-pulse rounded-full bg-slate-200" />
+    <div className="flex min-w-0 flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+      <div className="aspect-video w-full animate-pulse bg-slate-200" />
 
-        <div className="h-11 w-11 animate-pulse rounded-xl bg-slate-100" />
+      <div className="flex flex-1 flex-col p-5 sm:p-6">
+        <div className="flex items-start justify-between gap-3">
+          <div className="h-6 w-24 animate-pulse rounded-full bg-slate-200" />
+          <div className="h-11 w-11 animate-pulse rounded-xl bg-slate-100" />
+        </div>
+
+        <div className="mt-6 h-6 w-3/4 animate-pulse rounded-lg bg-slate-200" />
+
+        <div className="mt-4 space-y-2">
+          <div className="h-3 w-full animate-pulse rounded bg-slate-100" />
+          <div className="h-3 w-full animate-pulse rounded bg-slate-100" />
+          <div className="h-3 w-4/5 animate-pulse rounded bg-slate-100" />
+        </div>
+
+        <div className="mt-6 h-4 w-2/3 animate-pulse rounded bg-slate-100" />
+
+        <div className="mt-6 h-12 w-full animate-pulse rounded-xl bg-slate-200" />
       </div>
-
-      <div className="mt-6 h-6 w-3/4 animate-pulse rounded-lg bg-slate-200" />
-
-      <div className="mt-4 space-y-2">
-        <div className="h-3 w-full animate-pulse rounded bg-slate-100" />
-        <div className="h-3 w-full animate-pulse rounded bg-slate-100" />
-        <div className="h-3 w-4/5 animate-pulse rounded bg-slate-100" />
-      </div>
-
-      <div className="mt-6 h-4 w-2/3 animate-pulse rounded bg-slate-100" />
-
-      <div className="mt-6 h-12 w-full animate-pulse rounded-xl bg-slate-200" />
     </div>
   );
 }
@@ -398,52 +441,64 @@ export default function CourseCatalog() {
                 return (
                   <article
                     key={course.id}
-                    className="group flex min-w-0 flex-col rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition duration-300 hover:-translate-y-1 hover:border-indigo-200 hover:shadow-xl sm:p-6"
+                    className="group flex min-w-0 flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition duration-300 hover:-translate-y-1 hover:border-indigo-200 hover:shadow-xl"
                   >
-                    {/* Card Header */}
-                    <div className="flex items-start justify-between gap-3">
-                      <span className="max-w-[75%] truncate rounded-full bg-indigo-50 px-3 py-1.5 text-xs font-bold text-indigo-700">
-                        {course.category || "General"}
-                      </span>
+                    {/* Course Cover Image */}
+                    <CourseImage
+                      course={course}
+                      CourseIcon={CourseIcon}
+                    />
 
-                      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-50 to-violet-100 text-indigo-600 transition duration-300 group-hover:scale-105 group-hover:from-indigo-100 group-hover:to-violet-200">
-                        <CourseIcon size={24} strokeWidth={1.8} aria-hidden="true" />
+                    <div className="flex flex-1 flex-col p-5 sm:p-6">
+                      {/* Card Header */}
+                      <div className="flex items-start justify-between gap-3">
+                        <span className="max-w-[75%] truncate rounded-full bg-indigo-50 px-3 py-1.5 text-xs font-bold text-indigo-700">
+                          {course.category || "General"}
+                        </span>
+
+                        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-50 to-violet-100 text-indigo-600 transition duration-300 group-hover:scale-105 group-hover:from-indigo-100 group-hover:to-violet-200">
+                          <CourseIcon
+                            size={22}
+                            strokeWidth={1.8}
+                            aria-hidden="true"
+                          />
+                        </div>
                       </div>
-                    </div>
 
-                    {/* Course Information */}
-                    <h2 className="mt-5 break-words text-xl font-extrabold leading-7 text-slate-900 transition-colors group-hover:text-indigo-700">
-                      {course.title}
-                    </h2>
+                      {/* Course Information */}
+                      <h2 className="mt-5 break-words text-xl font-extrabold leading-7 text-slate-900 transition-colors group-hover:text-indigo-700">
+                        {course.title}
+                      </h2>
 
-                    <p className="mt-3 line-clamp-4 flex-1 whitespace-pre-line break-words text-sm leading-7 text-slate-600">
-                      {course.description || "Explore this learning course."}
-                    </p>
-
-                    {/* Instructor */}
-                    <div className="mt-5 border-t border-slate-100 pt-4">
-                      <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
-                        Instructor
+                      <p className="mt-3 line-clamp-4 flex-1 whitespace-pre-line break-words text-sm leading-7 text-slate-600">
+                        {course.description || "Explore this learning course."}
                       </p>
 
-                      <p className="mt-1 break-words text-sm font-semibold text-slate-700">
-                        {course.instructorName || "Nexora"}
-                      </p>
-                    </div>
+                      {/* Instructor */}
+                      <div className="mt-5 border-t border-slate-100 pt-4">
+                        <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+                          Instructor
+                        </p>
 
-                    {/* Course Action */}
-                    <Link
-                      to={`/courses/${course.id}`}
-                      className="mt-5 inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 py-3 text-center text-sm font-bold text-white transition hover:bg-indigo-700 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-indigo-500/30 focus-visible:ring-offset-2"
-                    >
-                      View course details
-                      <span
-                        aria-hidden="true"
-                        className="transition-transform group-hover:translate-x-1"
+                        <p className="mt-1 break-words text-sm font-semibold text-slate-700">
+                          {course.instructorName || "Nexora"}
+                        </p>
+                      </div>
+
+                      {/* Course Action */}
+                      <Link
+                        to={`/courses/${course.id}`}
+                        className="mt-5 inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 py-3 text-center text-sm font-bold text-white transition hover:bg-indigo-700 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-indigo-500/30 focus-visible:ring-offset-2"
                       >
-                        →
-                      </span>
-                    </Link>
+                        View course details
+                        <span
+                          aria-hidden="true"
+                          className="transition-transform group-hover:translate-x-1"
+                        >
+                          →
+                        </span>
+                      </Link>
+                    </div>
                   </article>
                 );
               })}
