@@ -1,28 +1,37 @@
 # Nexora – Learning & Online Examination Platform
 
-Nexora is a full-stack Learning Management and Online Examination Platform designed to provide students with an interactive learning experience and administrators with centralized academic management.
+Nexora is a full-stack Learning Management and Online Examination Platform designed to provide students with an interactive digital learning experience and administrators with centralized academic management.
 
-The platform allows students to explore courses, enroll in learning programs, take online examinations, track academic performance, and access their achievements.
+Students can explore courses, enroll in learning programs, access study materials, take online examinations, track their academic performance, and view their achievements.
 
-Administrators can manage courses, examinations, questions, student enrollments, results, and academic records through a centralized dashboard.
+Administrators can manage courses, examinations, questions, student enrollments, results, grade cards, and certificates through a centralized dashboard.
+
+## Live Demo
+
+- **Frontend:** [https://nexora-learning-platform.vercel.app/](https://nexora-learning-platform.vercel.app/)
+- **Backend API:** [https://nexora-backend-eblm.onrender.com](https://nexora-backend-eblm.onrender.com)
+- **GitHub Repository:** [https://github.com/sandipmandalgithub/Nexora](https://github.com/sandipmandalgithub/Nexora)
 
 ## Key Features
 
 ### Student Features
+
 - Student registration and secure login.
 - JWT-based authentication.
 - Browse and explore published courses.
-- Enroll in available courses.
-- Access learning materials.
+- Enroll in available learning programs.
+- Access course lessons and learning materials.
 - Take online examinations.
 - View examination results and performance.
-- Track academic achievements and grade cards.
+- Track academic achievements.
+- Access grade cards and certificates.
 
 ### Admin Features
+
 - Centralized admin dashboard.
 - Create, update, and manage courses.
 - Publish and manage examinations.
-- Manage examination questions and MCQs.
+- Create and manage examination questions and MCQs.
 - Manage student course enrollments.
 - View detailed examination results.
 - Manage academic achievements and certificates.
@@ -30,6 +39,7 @@ Administrators can manage courses, examinations, questions, student enrollments,
 ## Technology Stack
 
 ### Frontend
+
 - React.js 19
 - Vite 8
 - Tailwind CSS 4
@@ -38,6 +48,7 @@ Administrators can manage courses, examinations, questions, student enrollments,
 - Lucide React
 
 ### Backend
+
 - Java 21
 - Spring Boot 4.0.8
 - Spring MVC
@@ -49,15 +60,27 @@ Administrators can manage courses, examinations, questions, student enrollments,
 - OpenPDF
 
 ### Database
-- MySQL
+
+- MySQL-compatible database
+- TiDB Cloud Starter
 - MySQL Connector/J
 
 ### Development Tools
+
 - Visual Studio Code
 - Git & GitHub
 - Postman
 - MySQL Workbench
-- Maven
+- Apache Maven
+
+## Application Architecture
+
+Nexora follows a frontend-backend architecture:
+
+- **Frontend:** React application responsible for the user interface and client-side interactions.
+- **Backend:** Spring Boot REST API responsible for business logic, authentication, authorization, and data processing.
+- **Database:** MySQL-compatible relational database for storing application data.
+- **Authentication:** JWT-based authentication with role-based access control.
 
 ## Project Structure
 
@@ -114,7 +137,7 @@ Navigate to the project directory:
 cd Nexora
 ```
 
-### 2. Configure MySQL Database
+### 2. Configure the Database
 
 Start your MySQL server and create the database:
 
@@ -126,27 +149,27 @@ The application uses Hibernate with `ddl-auto=update` to manage database tables.
 
 ### 3. Configure Backend Environment Variables
 
-The backend reads its database and JWT configuration from environment variables.
+The backend reads database and JWT configuration from environment variables.
 
 | Variable | Description |
 |---|---|
-| DB_URL | MySQL database connection URL |
-| DB_USERNAME | MySQL username |
-| DB_PASSWORD | MySQL password |
-| JWT_SECRET | Secure JWT signing secret |
+| `DB_URL` | Database connection URL |
+| `DB_USERNAME` | Database username |
+| `DB_PASSWORD` | Database password |
+| `JWT_SECRET` | Secure JWT signing secret |
 
 Example local configuration:
 
-```text
+```env
 DB_URL=jdbc:mysql://localhost:3306/nexora_db
 DB_USERNAME=root
 DB_PASSWORD=your_mysql_password
 JWT_SECRET=your_secure_jwt_secret
 ```
 
-Use your actual local MySQL credentials. Never commit passwords or JWT secrets to GitHub.
+Use your actual database credentials. Never commit passwords or JWT secrets to GitHub.
 
-### 4. Run Backend
+### 4. Run the Backend
 
 Open Command Prompt and navigate to the backend directory:
 
@@ -166,9 +189,9 @@ Backend server:
 http://localhost:8080
 ```
 
-### 5. Configure Frontend
+### 5. Configure the Frontend
 
-Navigate to the frontend directory:
+Open another Command Prompt and navigate to the frontend directory:
 
 ```bash
 cd frontend
@@ -188,7 +211,7 @@ VITE_API_URL=http://localhost:8080
 
 **Important:** Set the backend origin without `/api`. The frontend API utility automatically appends `/api`.
 
-### 6. Run Frontend
+### 6. Run the Frontend
 
 Start the Vite development server:
 
@@ -206,14 +229,16 @@ http://localhost:5173
 
 | Command | Description |
 |---|---|
-| `npm run dev` | Start development server |
-| `npm run build` | Create production build |
-| `npm run preview` | Preview production build |
+| `npm run dev` | Start the development server |
+| `npm run build` | Create the production build |
+| `npm run preview` | Preview the production build |
 | `npm run lint` | Run ESLint checks |
 
 ## API Configuration
 
-The frontend uses a centralized API configuration.
+Nexora uses a centralized API configuration to manage backend communication.
+
+The frontend reads the backend URL from the `VITE_API_URL` environment variable and automatically constructs the API base URL.
 
 ```javascript
 const API_URL =
@@ -231,24 +256,56 @@ The backend provides REST API endpoints for authentication, courses, enrollments
 - JWT-based authentication.
 - Role-based access control.
 - Password hashing.
-- Request validation.
+- Request validation using Bean Validation.
 - Protected API endpoints.
+- Environment-based configuration for sensitive credentials.
 
 ## Deployment
 
-Nexora is designed to support separate frontend and backend deployment.
+Nexora is deployed using separate frontend, backend, and cloud database services.
 
-Before deployment:
+| Component | Hosting / Service |
+|---|---|
+| Frontend | Vercel |
+| Backend | Render |
+| Database | TiDB Cloud Starter |
 
-1. Configure a production MySQL-compatible cloud database.
-2. Set backend environment variables securely.
-3. Configure the production frontend URL in backend CORS settings.
-4. Deploy the Spring Boot backend.
-5. Set `VITE_API_URL` to the deployed backend origin.
-6. Deploy the React frontend.
-7. Verify authentication, course management, enrollment, examinations, and results in production.
+### Production URLs
 
-Never expose database credentials or JWT secrets in frontend code or public repositories.
+- **Frontend:** [https://nexora-learning-platform.vercel.app/](https://nexora-learning-platform.vercel.app/)
+- **Backend:** [https://nexora-backend-eblm.onrender.com](https://nexora-backend-eblm.onrender.com)
+
+### Deployment Configuration
+
+- Frontend deployed through Vercel.
+- Backend deployed as a Spring Boot application on Render.
+- Database hosted on TiDB Cloud Starter.
+- Production API URL configured using the `VITE_API_URL` environment variable.
+- Database credentials and JWT secrets configured through backend environment variables.
+
+**Note:** Free hosting services may have usage limits or temporary inactivity-related delays.
+
+## Testing & Verification
+
+The application was built and tested through local development and production deployment.
+
+Key verification areas include:
+
+- Frontend production build.
+- Backend startup and database connectivity.
+- Student authentication.
+- Course browsing and management.
+- Admin dashboard functionality.
+- Examination and academic management.
+- Production frontend-backend communication.
+
+## Future Improvements
+
+- Advanced learning analytics and reporting.
+- Additional examination formats.
+- Enhanced course progress tracking.
+- More interactive learning resources.
+- Advanced administrative reporting.
 
 ## Author
 
@@ -256,7 +313,9 @@ Never expose database credentials or JWT secrets in frontend code or public repo
 
 Full Stack Developer
 
-- GitHub: https://github.com/sandipmandalgithub
+- **Portfolio:** [sandipmandalgithub.github.io/sandip-portfolio](https://sandipmandalgithub.github.io/sandip-portfolio/)
+- **GitHub:** [github.com/sandipmandalgithub](https://github.com/sandipmandalgithub)
+- **LinkedIn:** [linkedin.com/in/mrsandipmandal](https://www.linkedin.com/in/mrsandipmandal/)
 
 ---
 
